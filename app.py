@@ -2,11 +2,11 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import plotly.express as px
+# import plotly.express as px
 import pandas as pd
 
 # df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv')
-unitIDs = pd.read_csv('data/unitIDs.csv')
+unitIDs = pd.read_csv('data/units/counts.csv')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -29,8 +29,9 @@ app.layout = html.Div([
 def update_figure(selected_df_ID):
     selected_unitID = unitIDs.at[selected_df_ID,'id']
     unitName = unitIDs.at[selected_df_ID,'name']
+    unitCount = unitIDs.at[selected_df_ID,'count']
     df = pd.read_csv('data/units/upgrades/' + str(selected_unitID) + ".csv")
-    data = [{'values': [i for i in df['count']], 'labels': [i for i in df['upgrades']], 'type': 'pie', 'title': unitName}]
+    data = [{'values': [i for i in df['count']], 'labels': [i for i in df['upgrades']], 'type': 'pie', 'title': unitName + ": " + str(unitCount) + "\n"}]
 
     return {
         'data': data
