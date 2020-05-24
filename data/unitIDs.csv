@@ -1,0 +1,71 @@
+﻿id,name,unitRank,points_v1
+1,AT-RT,support,55
+2,74-Z Speeder Bikes,support,75
+3,Darth Vader,commander,190
+4,Luke Skywalker,commander,160
+5,Stormtroopers,corps,44
+6,Rebel Troopers,corps,40
+7,Snowtroopers,corps,48
+8,General Veers,commander,80
+9,AT-ST,heavy,170
+10,T-47 Airspeeder,heavy,140
+11,Leia Organa,commander,90
+12,Fleet Troopers,corps,44
+13,Rebel Commandos,special,60
+14,Rebel Commandos (Strike Team),special,20
+15,Han Solo,commander,120
+16,Boba Fett,operative,140
+17,Scout Troopers,special,60
+18,1.4 FD Laser Cannon Team,support,70
+19,E-Web Heavy Blaster Team,support,55
+20,Emperor Palpatine,commander,210
+21,Imperial Royal Guards,special,75
+22,Rebel Officer,commander,50
+23,Imperial Officer,commander,50
+24,Wookiee Warriors,special,75
+25,Chewbacca,operative,95
+26,Scout Troopers (Strike Team),special,20
+27,Jyn Erso,commander,110
+28,Rebel Pathfinders,special,68
+29,Director Orson Krennic,commander,90
+30,Imperial Death Troopers,special,76
+31,TX-225 GAVw Occupier Combat Assault Tank,heavy,155
+32,X-34 Landspeeder,heavy,75
+33,Sabine Wren,operative,125
+34,Bossk,operative,115
+35,Tauntaun Riders,support,90
+36,Rebel Veterans,corps,48
+37,Phase I Clone Troopers,corps,52
+38,B1 Battle Droids,corps,36
+39,Shoretroopers,corps,52
+40,Dewback Rider,support,90
+41,Obi-Wan Kenobi,commander,175
+42,Mark II Medium Blaster Trooper,corps,38
+43,Droidekas,support,100
+44,BARC Speeder,support,75
+45,General Grievous,commander,175
+46,Luke Skywalker,operative,200
+47,Darth Vader,operative,170
+48,DF-90 Mortar Trooper,corps,36
+49,Count Dooku,commander,205
+50,Clone Captain Rex,commander,90
+51,Phase II Clone Troopers,corps,60
+52,B2 Super Battle Droids,corps,48
+53,TX-130 Saber-Class Fighter Tank,heavy,170
+54,AAT Trade Federation Battle Tank,heavy,170
+55,R2-D2,operative,35
+56,R2-D2,operative,35
+57,C-3PO,operative,15
+58,C-3PO,operative,15
+59,Cassian Andor,commander,90
+60,Iden Versio,commander,100
+61,Padme Amidala,operative,90
+62,Cad Bane,operative,125
+63,ARC Troopers Strike Team,special,21
+64,ARC Troopers,special,72
+65,BX-Series Droid Commandos,special,68
+66,BX-Series Droid Commandos Strike Team,special,22
+67,K-2SO,operative,70
+68,Iden's ID10 Seeker Droid,operative,15
+69,AT-RT,support,65
+70,STAP Riders,support,73
