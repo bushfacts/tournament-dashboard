@@ -31,7 +31,7 @@ def update_figure(selected_df_ID):
     unitName = unitIDs.at[selected_df_ID,'name']
     unitCount = unitIDs.at[selected_df_ID,'count']
     df = pd.read_csv('data/units/upgrades/' + str(selected_unitID) + ".csv")
-    data = [{'values': [i for i in df['count']], 'labels': [i for i in df['upgrades']], 'type': 'pie', 'title': unitName + ": " + str(unitCount) + "\n"}]
+    data = [{'values': [i for i in df['count']], 'labels': [i for i in df['upgrades']], 'type': 'pie', 'title': unitName + ": " + str(unitCount) + "\n", 'textinfo': ('label+value')}]
     fig = go.Figure()
     return {
         "data": data
