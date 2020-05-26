@@ -18,8 +18,8 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 app.layout = html.Div([
-    dcc.Graph(id='main-graph'),
-    dcc.Dropdown(
+                dcc.Graph(id='main-graph'),
+                dcc.Dropdown(
                 id='unit-name',
                 options=[{'label': unit[1], 'value': unit[0]} for unit in unitIDs],
                 value=unitIDs[0][0]
@@ -49,9 +49,6 @@ def update_figure(unitID):
             'name':type.title()
         })
 
-    # df = pd.read_csv('data/units/upgrades/' + str(selected_unitID) + ".csv")
-    # data = [{'values': [i for i in df['count']], 'labels': [i for i in df['upgrades']], 'type': 'pie', 'title': unitName + ": " + str(unitCount) + "\n", 'textinfo': ('label+value')}]
-
     return {
         'data': traces,
         'layout': {
@@ -60,7 +57,6 @@ def update_figure(unitID):
             'title': unitName
         }
     }
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
