@@ -18,12 +18,14 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 app.layout = html.Div([
-                dcc.Graph(id='main-graph'),
-                dcc.Dropdown(
-                id='unit-name',
-                options=[{'label': unit[1], 'value': unit[0]} for unit in unitIDs],
-                value=unitIDs[0][0]
-            )
+                html.Div(
+                    dcc.Dropdown(
+                    id='unit-name',
+                    options=[{'label': unit[1], 'value': int(unit[0])} for unit in unitIDs],
+                    value=unitIDs[0][0]),
+                    style={'width':'20%', 'display':'inline-block'}),
+                html.Div(
+                    dcc.Graph(id='main-graph'), style={'width':'80%','display':'inline-block'})
 ])
 
 @app.callback(
@@ -32,6 +34,7 @@ app.layout = html.Div([
 def update_figure(unitID):
     fig = go.Figure()
     traces = []
+    unitID = str(unitID)
     unitName = unitStats[unitID]['name']
     unitCount = int(unitStats[unitID]['count'])
     unitRank =  unitStats[unitID]['rank']
@@ -54,7 +57,7 @@ def update_figure(unitID):
         'layout': {
             'yaxis': {'range': [0,unitCount]},
             'transition': {'duration': 500},
-            'title': unitName
+            'title': unitName + "<br>" + str(unitCount) + " in attendance"
         }
     }
 
