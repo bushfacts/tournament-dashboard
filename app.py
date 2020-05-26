@@ -18,12 +18,19 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 app.layout = html.Div([
-                html.Div(
+                html.Div([
                     dcc.Dropdown(
-                    id='unit-name',
-                    options=[{'label': unit[1], 'value': int(unit[0])} for unit in unitIDs],
-                    value=unitIDs[0][0]),
-                    style={'width':'20%', 'display':'inline-block'}),
+                        id='graph-type',
+                        options=[{'label':'Summary','value':1},{'label':'Factions','value':2},{'label':'Units','value':3}],
+                        value=1
+                    ),
+                    dcc.Dropdown(
+                        id='unit-name',
+                        options=[{'label': unit[1], 'value': int(unit[0])} for unit in unitIDs],
+                        value=unitIDs[0][0]
+                    )],
+                    style={'width':'350px', 'display':'inline-block'}
+                    ),
                 html.Div(
                     dcc.Graph(id='main-graph'), style={'width':'80%','display':'inline-block'})
 ])
