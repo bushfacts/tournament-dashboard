@@ -11,17 +11,25 @@ import json
 unitStats = json.loads(open("data/unitStats.json").read())
 unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
+factionStats = json.loads(open("data/factionStats.json").read())
+factionColorsHex = {'rebel': '#A91515', 'imperial': '#6B6B6B',
+                    'republic': 'C49D36', 'separatist': '101A48'}
 
 app = dash.Dash(__name__)
-
 server = app.server
 
+#build out any static graphs up here and then drop them into app.layout below
+labels = [faction['name'] for faction in factionStats]
+values = [faction['count'] for faction in factionStats]
+factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
+            'marker': {'colors':[factionColorsHex[label] for label in labels]}}]}
+
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='units', children=[
-                    dcc.Tab(label='Summary', children=[
-                        html.H2('summary tab')
+                dcc.Tabs(id='navigation', value='summary', children=[
+                    dcc.Tab(label='Summary', value='summary', children=[
+                        dcc.Graph(figure=factionFig)
                     ]),
-                    dcc.Tab(label='Factions', children=[
+                    dcc.Tab(label='Factions', value='faction', children=[
                         html.H2('faction tab')
                     ]),
                     dcc.Tab(label='Units', value='units', children=[
@@ -33,7 +41,8 @@ app.layout = html.Div([
                     dcc.Tab(label='Meta Lists',children=[
                         html.H2('meta lists tab')
                     ])
-                ])
+                ]),
+                html.Img(src=app.get_asset_url('BushFacts white.png'), width="303px", height="75px")
             ])
 
 @app.callback(
