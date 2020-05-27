@@ -31,8 +31,7 @@ app.layout = html.Div([
                     )],
                     style={'width':'350px', 'display':'inline-block'}
                     ),
-                html.Div(
-                    dcc.Graph(id='main-graph'), style={'width':'80%','display':'inline-block'})
+                html.Div(id='main-graph', style={'width':'80%','display':'inline-block'})
 ])
 
 @app.callback(
@@ -44,13 +43,13 @@ def updateSecondMenu(selection):
         options = [{'label': unit[1], 'value': int(unit[0])} for unit in unitIDs]
         value = unitIDs[0][0]
     else:
-        options = [{'label': 'you', 'value': 1}, {'label': 'suck', 'value': 2}]
+        options = [""]
         value = 1
     return options, value
 
 #take two inputs. one from each dropdown to figure out what graph to present
 @app.callback(
-    Output('main-graph', 'figure'),
+    Output('main-graph', 'children'),
     [Input('first-selection', 'value'),
     Input('second-selection', 'value')])
 def update_figure(select1, select2):
@@ -72,14 +71,16 @@ def update_figure(select1, select2):
                 'type':'bar',
                 'name':type.title()
             })
-        return {
-            'data': traces,
-            'layout': {
-                'yaxis': {'range': [0,unitCount]},
-                'transition': {'duration': 500},
-                'title': unitName + "<br>" + str(unitCount) + " in attendance"
+        return html.Div(dcc.Graph(id='test',
+            figure={
+                'data': traces,
+                'layout': {
+                    'yaxis': {'range': [0,unitCount]},
+                    'transition': {'duration': 500},
+                    'title': unitName + "<br>" + str(unitCount) + " in attendance"
+                }
             }
-        }
+        ))
     else:
         return {'data':[1,2,3]}
 
