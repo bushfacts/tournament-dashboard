@@ -8,13 +8,10 @@ import pandas as pd
 import json
 #save in browser somewhere the event chosen and use that to rotate datasets
 
-# df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv')
 unitStats = json.loads(open("data/unitStats.json").read())
 unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app = dash.Dash(__name__)
 
 server = app.server
@@ -26,26 +23,23 @@ app.layout = html.Div([
                         options=[{'label':'Summary','value':1},{'label':'Factions','value':2},{'label':'Units','value':3}],
                         value=3
                     ),
-                    dcc.Dropdown(
-                        id='second-selection',
-                    )],
+                    html.Div(id='second-menu')
+                    ],
                     style={'width':'350px', 'display':'inline-block'}
                     ),
                 html.Div(id='main-graph', style={'width':'80%','display':'inline-block'})
 ])
 
 @app.callback(
-    [Output('second-selection', 'options'),
-    Output('second-selection','value')],
+    Output('second-menu', 'children'),
     [Input('first-selection', 'value')])
 def updateSecondMenu(selection):
     if selection == 3: #unit drop down options
         options = [{'label': unit[1], 'value': int(unit[0])} for unit in unitIDs]
         value = unitIDs[0][0]
+        return dcc.Dropdown(id='second-selection',options=options,value=value)
     else:
-        options = [""]
-        value = 1
-    return options, value
+        return html.Div(dcc.Dropdown(id='second-selection',options=options,value=1),style={'display': 'none'})
 
 #take two inputs. one from each dropdown to figure out what graph to present
 @app.callback(
@@ -82,7 +76,7 @@ def update_figure(select1, select2):
             }
         ))
     else:
-        return {'data':[1,2,3]}
+        return html.Div('You suck')
 
 if __name__ == '__main__':
     app.run_server(debug=True)
