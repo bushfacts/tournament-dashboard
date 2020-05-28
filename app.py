@@ -1,3 +1,5 @@
+#need bar widths to be relative to the screen, not number of categories...
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -21,16 +23,16 @@ server = app.server
 app.title = "Tournament Dashboard"
 
 #build out any static graphs up here and then drop them into app.layout below
+factionOptions=[{'label':'All','value':'all'},
+            {'label':'Rebel','value':'rebel'},
+            {'label':'Imperial','value':'imperial'},
+            {'label':'Republic','value':'republic'},
+            {'label':'Separatist','value':'separatist'}]
 ############## FACTION PIE CHART ##############
 labels = [faction['name'] for faction in summaryStats['factions']]
 values = [faction['count'] for faction in summaryStats['factions']]
 factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
             'marker': {'colors':[colors[label] for label in labels]}}]}
-############## ACTIVATION COUNT BAR CHART ##############
-labels = [act['act'] for act in summaryStats['activations']['all']]
-values = [act['count'] for act in summaryStats['activations']['all']]
-activationFig = {'data': [{'x': labels, 'y': values, 'textinfo': 'value', 'type': 'bar',
-                'textinfo': 'value', 'name': 'activation'}]}
 
 app.layout = html.Div([
                 dcc.Tabs(id='navigation', value='summary', children=[
@@ -38,10 +40,13 @@ app.layout = html.Div([
                         html.H2('Faction Count'),
                         dcc.Graph(figure=factionFig),
                         html.H2('Activation Count'),
-                        dcc.Graph(figure=activationFig)
+                        dcc.Dropdown(id='activation-selection', value='all', options=factionOptions),
+                        html.Div(id='activation-charts'),
+
                     ]),
                     dcc.Tab(label='Factions', value='faction', children=[
-                        html.H2('faction tab')
+                        dcc.Dropdown(id='faction-selection',
+                            options=factionOptions)
                     ]),
                     dcc.Tab(label='Units', value='units', children=[
                         dcc.Dropdown(id='unit-selection',
@@ -71,10 +76,11 @@ def update_figure(select):
         labels = [upgrade['name'] for upgrade in data]
         values = [upgrade['count'] for upgrade in data]
         traces.append({
-            'x':labels,
-            'y':values,
-            'type':'bar',
-            'name':type.title()
+            'x': labels,
+            'y': values,
+            'type': 'bar',
+            'width': .25,
+            'name': type.title()
         })
     return html.Div(dcc.Graph(id='test',
         figure={
@@ -86,6 +92,22 @@ def update_figure(select):
             }
         }
     ))
+
+@app.callback(
+    Output('activation-charts','children'),
+    [Input('activation-selection','value')])
+def update_activation_chart(faction):
+    #make a static min/max x range for persepctive
+    xmin = min([act['act'] for act in summaryStats['activations']['all']])
+    xmax = max([act['act'] for act in summaryStats['activations']['all']])
+    labels = [act['act'] for act in summaryStats['activations'][faction]]
+    values = [act['count'] for act in summaryStats['activations'][faction]]
+    activationFig = {'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'name': 'activation', 'layout':{
+                        'xaxes': {'range': [xmin-1,xmax], 'autorange': False} #not working
+                        }
+                    }]}
+    return dcc.Graph(figure=activationFig)
 
 
 if __name__ == '__main__':
