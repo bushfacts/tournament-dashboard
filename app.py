@@ -11,23 +11,34 @@ import json
 unitStats = json.loads(open("data/unitStats.json").read())
 unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
-factionStats = json.loads(open("data/factionStats.json").read())
-factionColorsHex = {'rebel': '#A91515', 'imperial': '#6B6B6B',
+summaryStats = json.loads(open("data/summaryStats.json").read())
+colors = {'rebel': '#A91515', 'imperial': '#6B6B6B',
                     'republic': 'C49D36', 'separatist': '101A48'}
+#choose a color for each gear
 
 app = dash.Dash(__name__)
 server = app.server
+app.title = "Tournament Dashboard"
 
 #build out any static graphs up here and then drop them into app.layout below
-labels = [faction['name'] for faction in factionStats]
-values = [faction['count'] for faction in factionStats]
+############## FACTION PIE CHART ##############
+labels = [faction['name'] for faction in summaryStats['factions']]
+values = [faction['count'] for faction in summaryStats['factions']]
 factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
-            'marker': {'colors':[factionColorsHex[label] for label in labels]}}]}
+            'marker': {'colors':[colors[label] for label in labels]}}]}
+############## ACTIVATION COUNT BAR CHART ##############
+labels = [act['act'] for act in summaryStats['activations']['all']]
+values = [act['count'] for act in summaryStats['activations']['all']]
+activationFig = {'data': [{'x': labels, 'y': values, 'textinfo': 'value', 'type': 'bar',
+                'textinfo': 'value', 'name': 'activation'}]}
 
 app.layout = html.Div([
                 dcc.Tabs(id='navigation', value='summary', children=[
                     dcc.Tab(label='Summary', value='summary', children=[
-                        dcc.Graph(figure=factionFig)
+                        html.H2('Faction Count'),
+                        dcc.Graph(figure=factionFig),
+                        html.H2('Activation Count'),
+                        dcc.Graph(figure=activationFig)
                     ]),
                     dcc.Tab(label='Factions', value='faction', children=[
                         html.H2('faction tab')
