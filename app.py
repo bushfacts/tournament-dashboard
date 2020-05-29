@@ -45,11 +45,15 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 app.layout = html.Div([
                 dcc.Tabs(id='navigation', value='summary', children=[
                     dcc.Tab(label='Summary', value='summary', children=[
-                        html.H2('Faction Count'),
-                        dcc.Graph(figure=factionFig),
-                        html.H2('Activation Count'),
-                        dcc.Dropdown(id='activation-selection', value='all', options=factionOptions),
-                        html.Div(id='activation-charts'),
+                        html.Div(className='row', children=[
+                            html.Div(className='five columns', children=[
+                                html.H2('Faction Count'),
+                                dcc.Graph(figure=factionFig)]),
+                            html.Div(className='five columns', children=[
+                                html.H2('Activation Count'),
+                                dcc.Dropdown(id='activation-selection', value='all', options=factionOptions),
+                                html.Div(id='activation-charts')])
+                            ]),
                         html.H2('Rounds Played (coming soon)'),
                         dcc.Dropdown(id='rounds-selection', value='all', options=factionOptions)
 
@@ -63,13 +67,40 @@ app.layout = html.Div([
                         html.H2('Battle Card Counts (coming soon)')
                     ]),
                     dcc.Tab(label='Units', value='units', children=[
-                        dcc.Dropdown(id='unit-selection',
+                        dcc.Dropdown(id='unit-selection', className='eight columns',
                             options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
                             value=int(unitIDs[0][0])),
-                        html.Div(id='graph'),
-                        html.H2('Win Rates (coming soon)'),
-                        html.H2('Win Rates by Battle Card (coming soon)'), #percent only? numbers might not make so much sense here...
-                        html.H2('Win Rates by Faction (coming soon)')
+                        html.Div(className='row', children=[
+                            html.Div(id='graph', className='eight columns'),
+                            html.Div(html.H6('Overall Win Rate')),
+                            html.Div(html.H6('Rebel Win Rate')),
+                            html.Div(html.H6('Imperial Win Rate')),
+                            html.Div(html.H6('Republic Win Rate')),
+                            html.Div(html.H6('Separatist Win Rate'))]),
+                        #percent only? numbers might not make so much sense here...
+                        html.Div(className='row', children=[
+                            html.Div(className='two columns', children=[html.H6('Objective Win Rate'),
+                                                                        html.H6('Objective Win Rate'),
+                                                                        html.H6('Objective Win Rate'),
+                                                                        html.H6('Objective Win Rate'),
+                                                                        html.H6('Objective Win Rate'),
+                                                                        html.H6('Objective Win Rate'),
+                                                                        html.H6('Objective Win Rate')]),
+                            html.Div(className='two columns', children=[html.H6('Condition Win Rate'),
+                                                                        html.H6('Condition Win Rate'),
+                                                                        html.H6('Condition Win Rate'),
+                                                                        html.H6('Condition Win Rate'),
+                                                                        html.H6('Condition Win Rate'),
+                                                                        html.H6('Condition Win Rate'),
+                                                                        html.H6('Condition Win Rate')]),
+                            html.Div(className='two columns', children=[html.H6('Deployment Win Rate'),
+                                                                        html.H6('Deployment Win Rate'),
+                                                                        html.H6('Deployment Win Rate'),
+                                                                        html.H6('Deployment Win Rate'),
+                                                                        html.H6('Deployment Win Rate'),
+                                                                        html.H6('Deployment Win Rate'),
+                                                                        html.H6('Deployment Win Rate')])
+                            ])
                     ]),
                     dcc.Tab(label='Meta Lists',children=[
                         html.H2('Meta List drop down menu'),
