@@ -8,6 +8,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import json
+
+########################################################################
+############################ STATIC OBJECTS ############################
+########################################################################
+
 #save in browser somewhere the event chosen and use that to rotate datasets
 
 unitStats = json.loads(open("data/unitStats.json").read())
@@ -34,6 +39,9 @@ values = [faction['count'] for faction in summaryStats['factions']]
 factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
             'marker': {'colors':[colors[label] for label in labels]}}]}
 
+#################################################################
+############################ THE APP ############################
+#################################################################
 app.layout = html.Div([
                 dcc.Tabs(id='navigation', value='summary', children=[
                     dcc.Tab(label='Summary', value='summary', children=[
@@ -42,25 +50,40 @@ app.layout = html.Div([
                         html.H2('Activation Count'),
                         dcc.Dropdown(id='activation-selection', value='all', options=factionOptions),
                         html.Div(id='activation-charts'),
+                        html.H2('Rounds Played (coming soon)'),
+                        dcc.Dropdown(id='rounds-selection', value='all', options=factionOptions)
 
                     ]),
                     dcc.Tab(label='Factions', value='faction', children=[
                         dcc.Dropdown(id='faction-selection',
-                            options=factionOptions)
+                            options=factionOptions),
+                        html.H2('Rank Counts (coming soon)'),
+                        html.H2('Points Spent on Rank (coming soon)'),
+                        html.H2('Command Card Counts (coming soon)'), #does all of this stuff just belong with Summary?
+                        html.H2('Battle Card Counts (coming soon)')
                     ]),
                     dcc.Tab(label='Units', value='units', children=[
                         dcc.Dropdown(id='unit-selection',
                             options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
                             value=int(unitIDs[0][0])),
-                        html.Div(id='graph')
+                        html.Div(id='graph'),
+                        html.H2('Win Rates (coming soon)'),
+                        html.H2('Win Rates by Battle Card (coming soon)'), #percent only? numbers might not make so much sense here...
+                        html.H2('Win Rates by Faction (coming soon)')
                     ]),
                     dcc.Tab(label='Meta Lists',children=[
-                        html.H2('meta lists tab')
+                        html.H2('Meta List drop down menu'),
+                        html.H2('Meta List definitions (coming soon)'),
+                        html.H2('Meta List counts (coming soon)'),
+                        html.H2('Meta List Win Rates (coming soon)')
                     ])
                 ]),
                 html.Img(src=app.get_asset_url('BushFacts white.png'), width="303px", height="75px")
             ])
 
+#######################################################################
+############################ THE FUNCTIONS ############################
+#######################################################################
 @app.callback(
     Output('graph', 'children'),
     [Input('unit-selection', 'value')])
