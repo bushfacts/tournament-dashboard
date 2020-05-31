@@ -19,6 +19,7 @@ unitStats = json.loads(open("data/unitStats.json").read())
 unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
 summaryStats = json.loads(open("data/summaryStats.json").read())
+listStats = json.loads(open("data/listStats.json").read())
 colors = {'rebel': '#A91515', 'imperial': '#6B6B6B',
                     'republic': 'C49D36', 'separatist': '101A48'}
 #choose a color for each gear
@@ -59,7 +60,8 @@ app.layout = html.Div([
                                 [
                                 html.H2('Activation Count'),
                                 dcc.Dropdown(id='activation-selection', value='all', options=factionOptions),
-                                html.Div(id='activation-charts')
+                                html.Div(id='activation-charts'),
+                                html.Div(id='activation-average')
                                 ]
                             )]
                         ),
@@ -71,10 +73,12 @@ app.layout = html.Div([
                                 dcc.Dropdown(id='rounds-selection', value='all', options=factionOptions)
                                 ]
                             ),
-                            html.Div(className='five columns', children=
+                            html.Div(className='seven columns', children=
                                 [
-                                html.H2('Bids (coming soon)'),
-                                dcc.Dropdown(id='bids-selection', value='all', options=factionOptions)
+                                html.H2('Bid Counts'),
+                                dcc.Dropdown(id='bid-selection', value='all', options=factionOptions),
+                                html.Div(id='bid-charts'),
+                                html.Div(id='bid-average')
                                 ]
                             )]
                         )]
@@ -189,14 +193,16 @@ def update_figure(select):
     ))
 
 @app.callback(
-    Output('activation-charts','children'),
+    [Output('activation-charts','children'),
+    Output('activation-average','children')],
     [Input('activation-selection','value')])
 def update_activation_chart(faction):
     #make a static min/max x range for persepctive
     xmin = min([act['act'] for act in summaryStats['activations']['all']])
     xmax = max([act['act'] for act in summaryStats['activations']['all']])
-    labels = [str(act['act']) for act in summaryStats['activations'][faction]]
+    labels = [act['act'] for act in summaryStats['activations'][faction]]
     values = [act['count'] for act in summaryStats['activations'][faction]]
+    average = sum([labels[i]*values[i] for i in range(len(values))])/sum(values)
     activationFig = {'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
                     'textinfo': 'value', 'name': 'activation'
                         }],
@@ -204,7 +210,30 @@ def update_activation_chart(faction):
                         'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}
                         }
                     }
-    return dcc.Graph(figure=activationFig)
+    return dcc.Graph(figure=activationFig), html.H6('Activation Average: ' + str('%.2f'%(average)))
+
+@app.callback(
+    [Output('bid-charts','children'),
+    Output('bid-average','children')],
+    [Input('bid-selection','value')])
+def update_bid_chart(faction):
+    #make a static min/max x range for persepctive
+    xmin = min([bid['bid'] for bid in summaryStats['bids']['all']])
+    xmax = max([bid['bid'] for bid in summaryStats['bids']['all']])
+    labels = [bid['bid'] for bid in summaryStats['bids'][faction]]
+    values = [bid['count'] for bid in summaryStats['bids'][faction]]
+    average = sum([labels[i]*values[i] for i in range(len(values))])/sum(values)
+    #reformat to strings? maybe?
+    # labels = [str(bid['bid']) for bid in summaryStats['bids'][faction]]
+    bidFig = {'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'name': 'bid'
+                        }],
+                    'layout':{
+                        'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}
+                        }
+                    }
+    return dcc.Graph(figure=bidFig), html.H6('Bid Average: ' + str('%.2f'%(average)))
+
 
 
 if __name__ == '__main__':
