@@ -33,7 +33,7 @@ factionOptions=[{'label':'All','value':'all'},
             {'label':'Imperial','value':'imperial'},
             {'label':'Republic','value':'republic'},
             {'label':'Separatist','value':'separatist'}]
-############## FACTION PIE CHART ##############
+############## FACTION COUNT PIE CHART ##############
 labels = [faction['name'] for faction in summaryStats['factions']]
 values = [faction['count'] for faction in summaryStats['factions']]
 factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
@@ -54,9 +54,14 @@ app.layout = html.Div([
                                 dcc.Dropdown(id='activation-selection', value='all', options=factionOptions),
                                 html.Div(id='activation-charts')])
                             ]),
-                        html.H2('Rounds Played (coming soon)'),
-                        dcc.Dropdown(id='rounds-selection', value='all', options=factionOptions)
-
+                        html.Div(className='row', children=[
+                            html.Div(className='five columns', children=[
+                                html.H2('Rounds Played (coming soon)'),
+                                dcc.Dropdown(id='rounds-selection', value='all', options=factionOptions)]),
+                            html.Div(className='five columns', children=[
+                                html.H2('Bids (coming soon)'),
+                                dcc.Dropdown(id='bids-selection', value='all', options=factionOptions)])
+                            ])
                     ]),
                     dcc.Tab(label='Factions', value='faction', children=[
                         dcc.Dropdown(id='faction-selection',
@@ -133,7 +138,7 @@ def update_figure(select):
             'x': labels,
             'y': values,
             'type': 'bar',
-            'width': .25,
+            'width': .5,
             'name': type.title()
         })
     return html.Div(dcc.Graph(id='test',
@@ -154,13 +159,15 @@ def update_activation_chart(faction):
     #make a static min/max x range for persepctive
     xmin = min([act['act'] for act in summaryStats['activations']['all']])
     xmax = max([act['act'] for act in summaryStats['activations']['all']])
-    labels = [act['act'] for act in summaryStats['activations'][faction]]
+    labels = [str(act['act']) for act in summaryStats['activations'][faction]]
     values = [act['count'] for act in summaryStats['activations'][faction]]
     activationFig = {'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
-                    'textinfo': 'value', 'name': 'activation', 'layout':{
-                        'xaxes': {'range': [xmin-1,xmax], 'autorange': False} #not working
+                    'textinfo': 'value', 'name': 'activation'
+                        }],
+                    'layout':{
+                        'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}
                         }
-                    }]}
+                    }
     return dcc.Graph(figure=activationFig)
 
 
