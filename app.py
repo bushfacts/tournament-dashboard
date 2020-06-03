@@ -25,6 +25,15 @@ colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separa
             'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
             'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4'
             }
+defaultColors = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
+battleColors = {}
+j=0
+for battleType in ['objectives', 'conditions','deployments']:
+    for i in summaryStats['battles']['all'][battleType]:
+        battleColors[i['name']] = defaultColors[j]
+        j += 1
+        if j == 10: j=0;
+
 #find the most appealing unit to initialize unit graph on
 #most upgrades?
 #highest density of upgrades?
@@ -52,7 +61,7 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 ############################ THE APP ############################
 #################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='commands', children=
+                dcc.Tabs(id='navigation', value='battles', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -178,8 +187,28 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Battles', value='battles', children=
                         [
-                        html.H2('Battle Card Counts (coming soon)')
-                        ]
+                        html.Div(className='six columns offset-by-three columns', children=
+                            [
+                            dcc.Dropdown(id='battle-selection', options=factionOptions, value='all'),
+                            html.H2("Objectives"),
+                            html.Div(id='objective-charts')
+                            ]
+                        ),
+                        html.Div(className='row', children=
+                            [
+                            html.Div(className='six columns', children=
+                                [
+                                html.H2("Conditions"),
+                                html.Div(id='condition-charts')
+                                ]
+                            ),
+                            html.Div(className='six columns', children=
+                                [
+                                html.H2("Deployments"),
+                                html.Div(id='deployment-charts')
+                                ]
+                            )]
+                        )]
                     ),
                     dcc.Tab(label='Meta Lists',children=
                         [
@@ -292,6 +321,28 @@ def update_command_chart(faction):
                                 'textinfo': 'value', 'name': str(i)+'-pips'}]
                             }
     return dcc.Graph(figure=commandCharts[1]),dcc.Graph(figure=commandCharts[2]),dcc.Graph(figure=commandCharts[3])
+
+@app.callback(
+    [Output('objective-charts','children'),
+    Output('condition-charts','children'),
+    Output('deployment-charts','children')],
+    [Input('battle-selection','value')]
+)
+def update_command_chart(faction):
+    commandCharts = {}
+    for i in ['objectives','conditions','deployments']:
+        #sort before graphing
+        data = [{'name': battle['name'],'count':battle['count']} for battle in summaryStats['battles'][faction][i]]
+        # data.sort(reverse=True, key=lambda x:x['count'])
+
+        labels = [battle['name'] for battle in data]
+        values = [battle['count'] for battle in data]
+        commandCharts[i] = {
+                            'data': [{'labels': labels, 'values': values, 'textinfo': 'value', 'type': 'pie',
+                            'marker': {'colors':[battleColors[label] for label in labels]}}]
+                            }
+    return dcc.Graph(figure=commandCharts['objectives']),dcc.Graph(figure=commandCharts['conditions']),dcc.Graph(figure=commandCharts['deployments'])
+
 
 
 
