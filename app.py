@@ -25,7 +25,12 @@ colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separa
             'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
             'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4'
             }
-#choose a color for each gear
+#find the most appealing unit to initialize unit graph on
+#most upgrades?
+#highest density of upgrades?
+#highest density of upgrades while being in the top x% of untis brought?
+#biggest variety of upgrades?
+#^ might be best
 
 app = dash.Dash(__name__)
 server = app.server
@@ -47,7 +52,7 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 ############################ THE APP ############################
 #################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='units', children=
+                dcc.Tabs(id='navigation', value='commands', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -97,7 +102,7 @@ app.layout = html.Div([
                         [
                         dcc.Dropdown(id='unit-selection', className='eight columns',
                             options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
-                            value=int(unitIDs[0][0])),
+                            value=int(unitIDs[38][0])),
                         html.Div(className='row', children=
                             [
                             html.Div(id='graph', className='eight columns'),
@@ -146,29 +151,32 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Commands', value='command', children=
+                    dcc.Tab(label='Commands', value='commands', children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
                             dcc.Dropdown(id='command-selection', options=factionOptions, value='all'),
-                            html.H2("1 pips")
+                            html.H2("1 pips"),
+                            html.Div(id='command1-charts')
                             ]
                         ),
                         html.Div(className='row', children=
                             [
                             html.Div(className='six columns', children=
                                 [
-                                html.H2("2 pips")
+                                html.H2("2 pips"),
+                                html.Div(id='command2-charts')
                                 ]
                             ),
                             html.Div(className='six columns', children=
                                 [
-                                html.H2("3 pips")
+                                html.H2("3 pips"),
+                                html.Div(id='command3-charts')
                                 ]
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Battles', value='battle', children=
+                    dcc.Tab(label='Battles', value='battles', children=
                         [
                         html.H2('Battle Card Counts (coming soon)')
                         ]
@@ -200,6 +208,7 @@ def update_figure(select):
     graphColors = []
     for type in unitStats[unitID]['upgrades']:
         data = [{'name':upgrade, 'count':int(unitStats[unitID]['upgrades'][type][upgrade])} for upgrade in unitStats[unitID]['upgrades'][type]]
+        #sort before graphing
         data.sort(reverse=True, key=lambda x:x['count'])
         labels = [upgrade['name'] for upgrade in data]
         values = [upgrade['count'] for upgrade in data]
@@ -256,14 +265,33 @@ def update_bid_chart(faction):
     average = sum([labels[i]*values[i] for i in range(len(values))])/sum(values)
     #reformat to strings? maybe?
     # labels = [str(bid['bid']) for bid in summaryStats['bids'][faction]]
-    bidFig = {'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
-                    'textinfo': 'value', 'name': 'bid'
-                        }],
-                    'layout':{
-                        'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}
-                        }
-                    }
+    bidFig = {
+            'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                'textinfo': 'value', 'name': 'bid'}],
+            'layout':{'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}}
+            }
     return dcc.Graph(figure=bidFig), html.H6('Bid Average: ' + str('%.2f'%(average)))
+
+@app.callback(
+    [Output('command1-charts','children'),
+    Output('command2-charts','children'),
+    Output('command3-charts','children')],
+    [Input('command-selection','value')]
+)
+def update_command_chart(faction):
+    commandCharts = {}
+    for i in range(1,4):
+        #sort before graphing
+        data = [{'name': command['name'],'count':command['count']} for command in summaryStats['commands'][faction][str(i)]]
+        data.sort(reverse=True, key=lambda x:x['count'])
+
+        labels = [command['name'] for command in data]
+        values = [command['count'] for command in data]
+        commandCharts[i] = {
+                            'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                                'textinfo': 'value', 'name': str(i)+'-pips'}]
+                            }
+    return dcc.Graph(figure=commandCharts[1]),dcc.Graph(figure=commandCharts[2]),dcc.Graph(figure=commandCharts[3])
 
 
 
