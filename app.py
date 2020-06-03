@@ -61,7 +61,7 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 ############################ THE APP ############################
 #################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='battles', children=
+                dcc.Tabs(id='navigation', value='summary', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
