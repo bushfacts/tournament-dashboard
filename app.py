@@ -20,8 +20,11 @@ unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
 summaryStats = json.loads(open("data/summaryStats.json").read())
 listStats = json.loads(open("data/listStats.json").read())
-colors = {'rebel': '#A91515', 'imperial': '#6B6B6B',
-                    'republic': 'C49D36', 'separatist': '101A48'}
+colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separatist':'#101A48',
+            'heavy weapon':'#1F37CD', 'personnel':'#1F77B4', 'force':'#FF7F0E', 'command':'#D62728', 'hardpoint':'#D62728',
+            'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
+            'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4'
+            }
 #choose a color for each gear
 
 app = dash.Dash(__name__)
@@ -44,7 +47,7 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 ############################ THE APP ############################
 #################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='summary', children=
+                dcc.Tabs(id='navigation', value='units', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -83,13 +86,11 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Factions', value='faction', children=
+                    dcc.Tab(label='Ranks', value='rank', children=
                         [
                         dcc.Dropdown(id='faction-selection', options=factionOptions),
                         html.H2('Rank Counts (coming soon)'),
-                        html.H2('Points Spent on Rank (coming soon)'),
-                        html.H2('Command Card Counts (coming soon)'), #does all of this stuff just belong with Summary?
-                        html.H2('Battle Card Counts (coming soon)')
+                        html.H2('Points Spent on Rank (coming soon)')
                         ]
                     ),
                     dcc.Tab(label='Units', value='units', children=
@@ -145,6 +146,33 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
+                    dcc.Tab(label='Commands', value='command', children=
+                        [
+                        html.Div(className='six columns offset-by-three columns', children=
+                            [
+                            dcc.Dropdown(id='command-selection', options=factionOptions, value='all'),
+                            html.H2("1 pips")
+                            ]
+                        ),
+                        html.Div(className='row', children=
+                            [
+                            html.Div(className='six columns', children=
+                                [
+                                html.H2("2 pips")
+                                ]
+                            ),
+                            html.Div(className='six columns', children=
+                                [
+                                html.H2("3 pips")
+                                ]
+                            )]
+                        )]
+                    ),
+                    dcc.Tab(label='Battles', value='battle', children=
+                        [
+                        html.H2('Battle Card Counts (coming soon)')
+                        ]
+                    ),
                     dcc.Tab(label='Meta Lists',children=
                         [
                         html.H2('Meta List drop down menu'),
@@ -169,17 +197,20 @@ def update_figure(select):
     unitName = unitStats[unitID]['name']
     unitCount = int(unitStats[unitID]['count'])
     unitRank =  unitStats[unitID]['rank']
+    graphColors = []
     for type in unitStats[unitID]['upgrades']:
         data = [{'name':upgrade, 'count':int(unitStats[unitID]['upgrades'][type][upgrade])} for upgrade in unitStats[unitID]['upgrades'][type]]
         data.sort(reverse=True, key=lambda x:x['count'])
         labels = [upgrade['name'] for upgrade in data]
         values = [upgrade['count'] for upgrade in data]
+        graphColors.append(colors[type])
         traces.append({
             'x': labels,
             'y': values,
             'type': 'bar',
             'width': .5,
-            'name': type.title()
+            'name': type.title(),
+            'marker': {'color': colors[type]}
         })
     return html.Div(dcc.Graph(id='test',
         figure={
