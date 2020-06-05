@@ -1,4 +1,6 @@
 #need bar widths to be relative to the screen, not number of categories...
+#need to label the callbacks with something visible
+
 
 import dash
 import dash_core_components as dcc
@@ -61,7 +63,7 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 ############################ THE SITE ############################
 ##################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='units', children=
+                dcc.Tabs(id='navigation', value='rank', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -102,36 +104,15 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Ranks', value='rank', children=
                         [
-                        dcc.Dropdown(id='faction-selection', options=factionOptions),
-                        html.Div(className='row', children=
-                            [
-                            html.Div(className='eight columns', children=[
-                                html.H2('points spent on each rank, pie chart')
-                                ]),
-                            html.Div(className='four columns', children=[
-                                html.H2('commanders and operatives')
-                                ])
-                            ]),
-                        html.Div(className='row', children=
-                            [
-                            html.Div(className='four columns', children=[
-                                html.H2('corps')
-                                ]),
-                            html.Div(className='four columns', children=[
-                                html.H2('special forces. bleh. maybe show the heavies here?'),
-                                html.H2('do that for all of them eventually')
-                                ]),
-                            html.Div(className='four columns', children=[
-                                html.H2('support and heavy')
-                                ])
-                            ])
+                        dcc.Dropdown(id='rank-selection', value='all', options=factionOptions),
+                        html.Div(id='rank-pages')
                         ]
                     ),
                     dcc.Tab(label='Units', value='units', children=
                         [
                         dcc.Dropdown(id='unit-selection', className='eight columns',
                             options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
-                            value=int(unitIDs[38][0])),
+                            value=(int(unitIDs[-1][0]))-1),
                         html.Div(className='row', children=
                             [
                             html.Div(id='graph', className='eight columns'),
@@ -334,7 +315,6 @@ def update_command_chart(faction):
         #sort before graphing
         data = [{'name': command['name'],'count':command['count']} for command in summaryStats['commands'][faction][str(i)]]
         data.sort(reverse=True, key=lambda x:x['count'])
-
         labels = [command['name'] for command in data]
         values = [command['count'] for command in data]
         commandCharts[i] = {
@@ -387,6 +367,84 @@ def update_meta_pages(page):
             html.H4('win rates with each battle selection')
             ])
     return content
+
+@app.callback(
+    Output('rank-pages','children'),
+    [Input('rank-selection','value')]
+)
+def update_rank_pages(selection):
+    #id, name, rank, count, faction limited to this faction
+    if selection == 'all':
+        rankData = [[unit[0],unit[1],unitStats[unit[0]]['rank'],unitStats[unit[0]]['count'],unitStats[unit[0]]['faction']] for unit in unitIDs]
+    else:
+        rankData = [[unit[0],unit[1],unitStats[unit[0]]['rank'],unitStats[unit[0]]['count'],unitStats[unit[0]]['faction']] for unit in unitIDs if unitStats[unit[0]]['faction']==selection]
+    rankData.sort(reverse=True, key=lambda x:x[3])
+    heroData = [unit for unit in rankData if unit[2] in ['commander','operative']]
+    labels = [unit[1] for unit in heroData]
+    values = [unit[3] for unit in heroData]
+    theseColors = [colors[unit[4]] for unit in heroData]
+    heroFig =   {
+                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'marker':{'color':theseColors}}],
+                'layout': {'autosize': True}
+                }
+    corpsData = [unit for unit in rankData if unit[2] == 'corps']
+    labels = [unit[1] for unit in corpsData]
+    values = [unit[3] for unit in corpsData]
+    theseColors = [colors[unit[4]] for unit in corpsData]
+    corpsFig =   {
+                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'marker':{'color':theseColors}}],
+                'layout': {'autosize': True}
+                }
+    sfData = [unit for unit in rankData if unit[2] == 'special']
+    labels = [unit[1] for unit in sfData]
+    values = [unit[3] for unit in sfData]
+    theseColors = [colors[unit[4]] for unit in sfData]
+    sfFig =   {
+                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'marker':{'color':theseColors}}],
+                'layout': {'autosize': True}
+                }
+    vehicleData = [unit for unit in rankData if unit[2] in ['heavy','support']]
+    labels = [unit[1] for unit in vehicleData]
+    values = [unit[3] for unit in vehicleData]
+    theseColors = [colors[unit[4]] for unit in vehicleData]
+    vehicleFig =   {
+                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'marker':{'color':theseColors}}],
+                'layout': {'autosize': True}
+                }
+
+    content = html.Div(children=[
+        html.Div(className='row', children=
+            [
+            html.Div(className='six columns', children=[
+                html.H2('points spent on each rank, pie chart')
+                ]),
+            html.Div(className='six columns', children=[
+                html.H2('commanders and operatives'),
+                dcc.Graph(figure=heroFig)
+                ])
+            ]),
+        html.Div(className='row', children=
+            [
+            html.Div(className='four columns', children=[
+                html.H2('corps'),
+                dcc.Graph(figure=corpsFig)
+                ]),
+            html.Div(className='four columns', children=[
+                html.H2('special forces. bleh. maybe show the heavies here?'),
+                dcc.Graph(figure=sfFig)
+                ]),
+            html.Div(className='four columns', children=[
+                html.H2('support and heavy'),
+                dcc.Graph(figure=vehicleFig)
+                ])
+            ])])
+    return content
+
+
 
 
 
