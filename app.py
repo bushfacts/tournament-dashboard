@@ -23,12 +23,12 @@ listStats = json.loads(open("data/listStats.json").read())
 colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separatist':'#101A48',
             'heavy weapon':'#1F37CD', 'personnel':'#1F77B4', 'force':'#FF7F0E', 'command':'#D62728', 'hardpoint':'#D62728',
             'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
-            'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4'
+            'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4', 'counterpart':'#FF7F0E'
             }
 defaultColors = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
 battleColors = {}
-j=0
 for battleType in ['objectives', 'conditions','deployments']:
+    j = 0
     for i in summaryStats['battles']['all'][battleType]:
         battleColors[i['name']] = defaultColors[j]
         j += 1
@@ -57,11 +57,11 @@ values = [faction['count'] for faction in summaryStats['factions']]
 factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
             'marker': {'colors':[colors[label] for label in labels]}}]}
 
-#################################################################
-############################ THE APP ############################
-#################################################################
+##################################################################
+############################ THE SITE ############################
+##################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='summary', children=
+                dcc.Tabs(id='navigation', value='units', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -103,8 +103,28 @@ app.layout = html.Div([
                     dcc.Tab(label='Ranks', value='rank', children=
                         [
                         dcc.Dropdown(id='faction-selection', options=factionOptions),
-                        html.H2('Rank Counts (coming soon)'),
-                        html.H2('Points Spent on Rank (coming soon)')
+                        html.Div(className='row', children=
+                            [
+                            html.Div(className='eight columns', children=[
+                                html.H2('points spent on each rank, pie chart')
+                                ]),
+                            html.Div(className='four columns', children=[
+                                html.H2('commanders and operatives')
+                                ])
+                            ]),
+                        html.Div(className='row', children=
+                            [
+                            html.Div(className='four columns', children=[
+                                html.H2('corps')
+                                ]),
+                            html.Div(className='four columns', children=[
+                                html.H2('special forces. bleh. maybe show the heavies here?'),
+                                html.H2('do that for all of them eventually')
+                                ]),
+                            html.Div(className='four columns', children=[
+                                html.H2('support and heavy')
+                                ])
+                            ])
                         ]
                     ),
                     dcc.Tab(label='Units', value='units', children=
@@ -210,12 +230,13 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Meta Lists',children=
+                    dcc.Tab(label='Meta Lists', value='meta', children=
                         [
-                        html.H2('Meta List drop down menu'),
-                        html.H2('Meta List definitions (coming soon)'),
-                        html.H2('Meta List counts (coming soon)'),
-                        html.H2('Meta List Win Rates (coming soon)')
+                        dcc.Dropdown(id='meta-selection', value='summary', options=
+                            [{'label':'Summary', 'value':'summary'},{'label':'Comparison','value':'comparison'},
+                            {'label':'Meta List 1','value':'meta1'},{'label':'Meta List 2','value':'meta2'},
+                            {'label':'Meta List 3','value':'meta3'}]),
+                        html.Div(id='meta-pages')
                         ]
                     )]
                 ),
@@ -318,7 +339,8 @@ def update_command_chart(faction):
         values = [command['count'] for command in data]
         commandCharts[i] = {
                             'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
-                                'textinfo': 'value', 'name': str(i)+'-pips'}]
+                                'textinfo': 'value', 'name': str(i)+'-pips'}],
+                            'layout': {'autosize': True, 'margin': {'t':20, 'r':20}}
                             }
     return dcc.Graph(figure=commandCharts[1]),dcc.Graph(figure=commandCharts[2]),dcc.Graph(figure=commandCharts[3])
 
@@ -328,8 +350,8 @@ def update_command_chart(faction):
     Output('deployment-charts','children')],
     [Input('battle-selection','value')]
 )
-def update_command_chart(faction):
-    commandCharts = {}
+def update_battle_chart(faction):
+    battleCharts = {}
     for i in ['objectives','conditions','deployments']:
         #sort before graphing
         data = [{'name': battle['name'],'count':battle['count']} for battle in summaryStats['battles'][faction][i]]
@@ -337,12 +359,34 @@ def update_command_chart(faction):
 
         labels = [battle['name'] for battle in data]
         values = [battle['count'] for battle in data]
-        commandCharts[i] = {
+        battleCharts[i] = {
                             'data': [{'labels': labels, 'values': values, 'textinfo': 'value', 'type': 'pie',
-                            'marker': {'colors':[battleColors[label] for label in labels]}}]
+                            'marker': {'colors':[battleColors[label] for label in labels]}}],
                             }
-    return dcc.Graph(figure=commandCharts['objectives']),dcc.Graph(figure=commandCharts['conditions']),dcc.Graph(figure=commandCharts['deployments'])
+    return dcc.Graph(figure=battleCharts['objectives']),dcc.Graph(figure=battleCharts['conditions']),dcc.Graph(figure=battleCharts['deployments'])
 
+
+@app.callback(
+    Output('meta-pages','children'),
+    [Input('meta-selection','value')]
+)
+def update_meta_pages(page):
+    content = ''
+    if page == 'summary':
+        content = html.Div([
+            html.H2('division of which lists were meta lists and which were not'),
+            html.H4('is this just one chart then?')
+            ])
+    elif page == 'comparison':
+        content = html.H2('n^2-n pie charts of each meta list playing against each other')
+    else:
+        content = html.Div([
+            html.H2('Individual Pages'),
+            html.H4('central picture of the cards required to be considered this meta list'),
+            html.H4('win rates v each faction'),
+            html.H4('win rates with each battle selection')
+            ])
+    return content
 
 
 
