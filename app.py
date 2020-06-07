@@ -16,12 +16,13 @@ import json
 ########################################################################
 
 #save in browser somewhere the event chosen and use that to rotate datasets
+eventID = 134
 
-unitStats = json.loads(open("data/unitStats.json").read())
+unitStats = json.loads(open("data/"+str(eventID)+"/unitStats.json").read())
 unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
-summaryStats = json.loads(open("data/summaryStats.json").read())
-listStats = json.loads(open("data/listStats.json").read())
+summaryStats = json.loads(open("data/"+str(eventID)+"/summaryStats.json").read())
+listStats = json.loads(open("data/"+str(eventID)+"/listStats.json").read())
 colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separatist':'#101A48',
             'heavy weapon':'#1F37CD', 'personnel':'#1F77B4', 'force':'#FF7F0E', 'command':'#D62728', 'hardpoint':'#D62728',
             'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
@@ -63,7 +64,7 @@ factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'text
 ############################ THE SITE ############################
 ##################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='rank', children=
+                dcc.Tabs(id='navigation', value='summary', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -112,7 +113,7 @@ app.layout = html.Div([
                         [
                         dcc.Dropdown(id='unit-selection', className='eight columns',
                             options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
-                            value=(int(unitIDs[-1][0]))-1),
+                            value=(int(unitIDs[-1][0]))),
                         html.Div(className='row', children=
                             [
                             html.Div(id='graph', className='eight columns'),
@@ -161,7 +162,7 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Commands', value='commands', children=
+                    dcc.Tab(label='Commands', value='commands', disabled=True, children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
@@ -186,7 +187,7 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Battles', value='battles', children=
+                    dcc.Tab(label='Battles', value='battles', disabled=True, children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
@@ -297,8 +298,8 @@ def update_bid_chart(faction):
     #reformat to strings? maybe?
     # labels = [str(bid['bid']) for bid in summaryStats['bids'][faction]]
     bidFig = {
-            'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
-                'textinfo': 'value', 'name': 'bid'}],
+            'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
+                'textinfo': 'value', 'name': 'bid', 'marker':{'color':defaultColors[2]}}],
             'layout':{'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}}
             }
     return dcc.Graph(figure=bidFig), html.H6('Bid Average: ' + str('%.2f'%(average)))
@@ -311,6 +312,7 @@ def update_bid_chart(faction):
 )
 def update_command_chart(faction):
     commandCharts = {}
+    commandColors = [defaultColors[3],defaultColors[4],defaultColors[2]]
     for i in range(1,4):
         #sort before graphing
         data = [{'name': command['name'],'count':command['count']} for command in summaryStats['commands'][faction][str(i)]]
@@ -319,7 +321,7 @@ def update_command_chart(faction):
         values = [command['count'] for command in data]
         commandCharts[i] = {
                             'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
-                                'textinfo': 'value', 'name': str(i)+'-pips'}],
+                                'textinfo': 'value', 'name': str(i)+'-pips', 'marker':{'color':commandColors[i-1]}}],
                             'layout': {'autosize': True, 'margin': {'t':20, 'r':20}}
                             }
     return dcc.Graph(figure=commandCharts[1]),dcc.Graph(figure=commandCharts[2]),dcc.Graph(figure=commandCharts[3])
@@ -384,7 +386,7 @@ def update_rank_pages(selection):
     values = [unit[3] for unit in heroData]
     theseColors = [colors[unit[4]] for unit in heroData]
     heroFig =   {
-                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
                     'textinfo': 'value', 'marker':{'color':theseColors}}],
                 'layout': {'autosize': True}
                 }
@@ -393,7 +395,7 @@ def update_rank_pages(selection):
     values = [unit[3] for unit in corpsData]
     theseColors = [colors[unit[4]] for unit in corpsData]
     corpsFig =   {
-                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
                     'textinfo': 'value', 'marker':{'color':theseColors}}],
                 'layout': {'autosize': True}
                 }
@@ -402,7 +404,7 @@ def update_rank_pages(selection):
     values = [unit[3] for unit in sfData]
     theseColors = [colors[unit[4]] for unit in sfData]
     sfFig =   {
-                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
                     'textinfo': 'value', 'marker':{'color':theseColors}}],
                 'layout': {'autosize': True}
                 }
@@ -411,7 +413,7 @@ def update_rank_pages(selection):
     values = [unit[3] for unit in vehicleData]
     theseColors = [colors[unit[4]] for unit in vehicleData]
     vehicleFig =   {
-                'data': [{'x': labels, 'y': values, 'width': .5, 'textinfo': 'value', 'type': 'bar',
+                'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
                     'textinfo': 'value', 'marker':{'color':theseColors}}],
                 'layout': {'autosize': True}
                 }
