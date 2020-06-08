@@ -78,6 +78,7 @@ c += ["#F0F0F0"]
 metaSummaryFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
             'marker': {'colors': c}}]}
 ############## META MENU ##############
+# can i color menu options? just with like a=0.5
 metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison','value':'comparison'}]
 for faction in metaListStats:
     index = 0
