@@ -23,6 +23,8 @@ unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
 unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
 summaryStats = json.loads(open("data/"+str(eventID)+"/summaryStats.json").read())
 listStats = json.loads(open("data/"+str(eventID)+"/listStats.json").read())
+metaListStats = json.loads(open("data/"+str(eventID)+"/metaListStats.json").read())
+
 colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separatist':'#101A48',
             'heavy weapon':'#1F37CD', 'personnel':'#1F77B4', 'force':'#FF7F0E', 'command':'#D62728', 'hardpoint':'#D62728',
             'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
@@ -36,6 +38,8 @@ for battleType in ['objectives', 'conditions','deployments']:
         battleColors[i['name']] = defaultColors[j]
         j += 1
         if j == 10: j=0;
+factionShades = {'rebel': ['#A91515','#891212','#651616'], 'imperial': ['#6B6B6B','#5A5959','#454343','#333333'],
+                'republic': ['#C49D36','#A27F0D'], 'separatist': ['#101A48','#162A87','#1942FF']}
 
 #find the most appealing unit to initialize unit graph on
 #most upgrades?
@@ -60,11 +64,31 @@ values = [faction['count'] for faction in summaryStats['factions']]
 factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
             'marker': {'colors':[colors[label] for label in labels]}}]}
 
+############## META SUMMARY PIE CHART ##############
+labels = []
+values = []
+c = []
+for faction in metaListStats:
+    labels = labels + [meta["name"] for meta in metaListStats[faction]]
+    values = values + [meta["count"] for meta in metaListStats[faction]]
+    c = c + factionShades[faction]
+labels += ["Off-Meta"]
+values += [metaListStats["rebel"][0]["off-meta total"]]
+c += ["#F0F0F0"]
+metaSummaryFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
+            'marker': {'colors': c}}]}
+############## META MENU ##############
+metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison','value':'comparison'}]
+for faction in metaListStats:
+    for meta in metaListStats[faction]:
+        if meta['count'] > 0:
+            metaOptions += [{'label':"--" + meta['name'], 'value': faction+"~"+meta['name']}]
+
 ##################################################################
 ############################ THE SITE ############################
 ##################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='summary', children=
+                dcc.Tabs(id='navigation', value='meta', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -214,10 +238,10 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Meta Lists', value='meta', children=
                         [
-                        dcc.Dropdown(id='meta-selection', value='summary', options=
-                            [{'label':'Summary', 'value':'summary'},{'label':'Comparison','value':'comparison'},
-                            {'label':'Meta List 1','value':'meta1'},{'label':'Meta List 2','value':'meta2'},
-                            {'label':'Meta List 3','value':'meta3'}]),
+                        dcc.Dropdown(id='meta-selection', value='summary', options=metaOptions),
+                            # [{'label':'Summary', 'value':'summary'},{'label':'Comparison','value':'comparison'},
+                            # {'label':'Meta List 1','value':'meta1'},{'label':'Meta List 2','value':'meta2'},
+                            # {'label':'Meta List 3','value':'meta3'}]),
                         html.Div(id='meta-pages')
                         ]
                     )]
@@ -355,16 +379,19 @@ def update_battle_chart(faction):
 def update_meta_pages(page):
     content = ''
     if page == 'summary':
-        content = html.Div([
+        content = html.Div(className="five columns", children=[
             html.H2('division of which lists were meta lists and which were not'),
-            html.H4('is this just one chart then?')
+            dcc.Graph(figure=metaSummaryFig)
             ])
     elif page == 'comparison':
         content = html.H2('n^2-n pie charts of each meta list playing against each other')
     else:
+        faction = page.split('~')[0]
+        meta = page.split('~')[1]
         content = html.Div([
             html.H2('Individual Pages'),
             html.H4('central picture of the cards required to be considered this meta list'),
+            html.H4('unit charts and upgrade? charts of surrounding army'),
             html.H4('win rates v each faction'),
             html.H4('win rates with each battle selection')
             ])
