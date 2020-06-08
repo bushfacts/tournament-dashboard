@@ -80,9 +80,11 @@ metaSummaryFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', '
 ############## META MENU ##############
 metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison','value':'comparison'}]
 for faction in metaListStats:
+    index = 0
     for meta in metaListStats[faction]:
         if meta['count'] > 0:
-            metaOptions += [{'label':"--" + meta['name'], 'value': faction+"~"+meta['name']}]
+            metaOptions += [{'label':"--" + meta['name'], 'value': faction+"~"+str(index)}]
+        index += 1
 
 ##################################################################
 ############################ THE SITE ############################
@@ -238,7 +240,7 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Meta Lists', value='meta', children=
                         [
-                        dcc.Dropdown(id='meta-selection', value='summary', options=metaOptions),
+                        dcc.Dropdown(id='meta-selection', value=metaOptions[2]['value'], options=metaOptions),
                             # [{'label':'Summary', 'value':'summary'},{'label':'Comparison','value':'comparison'},
                             # {'label':'Meta List 1','value':'meta1'},{'label':'Meta List 2','value':'meta2'},
                             # {'label':'Meta List 3','value':'meta3'}]),
@@ -387,11 +389,27 @@ def update_meta_pages(page):
         content = html.H2('n^2-n pie charts of each meta list playing against each other')
     else:
         faction = page.split('~')[0]
-        meta = page.split('~')[1]
+        metaNumber = page.split('~')[1]
+        units = metaListStats[faction][int(metaNumber)]["units"]
+        units.sort(reverse=True, key=lambda x:x['count'])
+        labels = [unit["name"] for unit in units]
+        values = [unit["count"] for unit in units]
+        metaUnitChart = {'data': [{'x':labels, 'y':values, 'type':'bar'}]}
+        upgrades = metaListStats[faction][int(metaNumber)]["upgrades"]
+        upgrades.sort(reverse=True, key=lambda x:x['count'])
+        labels = [upgrade["name"] for upgrade in upgrades]
+        values = [upgrade["count"] for upgrade in upgrades]
+        metaUpgradeChart = {'data': [{'x':labels, 'y':values, 'type':'bar'}]}
+
         content = html.Div([
-            html.H2('Individual Pages'),
+            html.H1(metaListStats[faction][int(metaNumber)]["name"]),
+            html.H3("count: " + str(metaListStats[faction][int(metaNumber)]["count"])),
+            html.H4("requirements: " + metaListStats[faction][int(metaNumber)]["img"]),
             html.H4('central picture of the cards required to be considered this meta list'),
-            html.H4('unit charts and upgrade? charts of surrounding army'),
+            html.Div(className="row", children=[
+                html.Div(className="six columns", children=[dcc.Graph(figure=metaUnitChart)]),
+                html.Div(className="six columns", children=[dcc.Graph(figure=metaUpgradeChart)])
+                ]),
             html.H4('win rates v each faction'),
             html.H4('win rates with each battle selection')
             ])
