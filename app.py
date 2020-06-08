@@ -90,7 +90,7 @@ for faction in metaListStats:
 ############################ THE SITE ############################
 ##################################################################
 app.layout = html.Div([
-                dcc.Tabs(id='navigation', value='meta', children=
+                dcc.Tabs(id='navigation', value='summary', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -240,7 +240,7 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Meta Lists', value='meta', children=
                         [
-                        dcc.Dropdown(id='meta-selection', value=metaOptions[2]['value'], options=metaOptions),
+                        dcc.Dropdown(id='meta-selection', value='summary', options=metaOptions),
                             # [{'label':'Summary', 'value':'summary'},{'label':'Comparison','value':'comparison'},
                             # {'label':'Meta List 1','value':'meta1'},{'label':'Meta List 2','value':'meta2'},
                             # {'label':'Meta List 3','value':'meta3'}]),
