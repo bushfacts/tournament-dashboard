@@ -1,5 +1,7 @@
 #need bar widths to be relative to the screen, not number of categories...
 #need to label the callbacks with something visible
+#contents of all of app.layout can be moved to individual files
+#maybe keep callback instance here, but the functions they reference can even go to other files
 
 
 import dash
@@ -16,11 +18,15 @@ import json
 ########################################################################
 
 #save in browser somewhere the event chosen and use that to rotate datasets
-eventID = 134
+# eventID = 2
+eventID=134
+eventOptions = [{'label': 'IL5 Round Robin', 'value': 2},
+                {'label': 'IL5 Single Elimination', 'value': 134}]
 
-unitStats = json.loads(open("data/"+str(eventID)+"/unitStats.json").read())
-unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
-unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
+# unitStats = json.loads(open("data/"+str(eventID)+"/unitStats.json").read())
+#probably won't be able to do these other two lines... =/
+# unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
+# unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
 summaryStats = json.loads(open("data/"+str(eventID)+"/summaryStats.json").read())
 listStats = json.loads(open("data/"+str(eventID)+"/listStats.json").read())
 metaListStats = json.loads(open("data/"+str(eventID)+"/metaListStats.json").read())
@@ -91,6 +97,20 @@ for faction in metaListStats:
 ############################ THE SITE ############################
 ##################################################################
 app.layout = html.Div([
+                html.Div(className='row', children=[
+                    html.Div(className='two columns', children=[
+                        html.H6('Choose an event:')
+                    ]),
+                    html.Div(className='three columns', children=[
+                        dcc.Dropdown(id='event-selection', value=2, options=eventOptions)
+                    ]),
+                    # DATA CACHE
+                    html.Div(id='unit-data', style={'display': 'none'}),
+                    html.Div(id='summary-data', style={'display': 'none'}),
+                    html.Div(id='list-data', style={'display': 'none'}),
+                    html.Div(id='meta-data', style={'display': 'none'}),
+                    html.Div(id='unitID-data', style={'display': 'none'})
+                ]),
                 dcc.Tabs(id='navigation', value='summary', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
@@ -138,9 +158,9 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Units', value='units', children=
                         [
-                        dcc.Dropdown(id='unit-selection', className='eight columns',
-                            options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
-                            value=(int(unitIDs[-1][0]))),
+                        dcc.Dropdown(id='unit-selection', className='eight columns'
+                            # options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
+                            ),
                         html.Div(className='row', children=
                             [
                             html.Div(id='graph', className='eight columns'),
@@ -189,7 +209,7 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Commands', value='commands', disabled=True, children=
+                    dcc.Tab(label='Commands', value='commands', disabled=False, children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
@@ -214,7 +234,7 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Battles', value='battles', disabled=True, children=
+                    dcc.Tab(label='Battles', value='battles', disabled=False, children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
@@ -251,14 +271,67 @@ app.layout = html.Div([
                 ),
                 html.Img(src=app.get_asset_url('BushFacts white.png'), width="303px", height="75px")
             ])
+#######################################################################
+############################### THE DATA ##############################
+#######################################################################
+@app.callback(
+    Output('unit-data', 'children'),
+    [Input('event-selection', 'value')])
+def update_unit_data(event):
+    unitStats = json.loads(open("data/"+str(event)+"/unitStats.json").read())
+    return unitStats
+
+@app.callback(
+    Output('summary-data', 'children'),
+    [Input('event-selection', 'value')])
+def update_summary_data(event):
+    stats = json.loads(open("data/"+str(event)+"/summaryStats.json").read())
+    return stats
+
+@app.callback(
+    Output('list-data', 'children'),
+    [Input('event-selection', 'value')])
+def update_list_data(event):
+    stats = json.loads(open("data/"+str(event)+"/listStats.json").read())
+    return stats
+
+@app.callback(
+    Output('meta-data', 'children'),
+    [Input('event-selection', 'value')])
+def update_meta_data(event):
+    stats = json.loads(open("data/"+str(event)+"/metaListStats.json").read())
+    return stats
+
+@app.callback(
+    Output('unitID-data', 'children'),
+    [Input('unit-data', 'children')])
+def update_unitID_data(unitStats):
+    unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
+    unitIDs.sort(key=lambda x:x[1])
+    return unitIDs
 
 #######################################################################
 ############################ THE FUNCTIONS ############################
 #######################################################################
 @app.callback(
+    [Output('unit-selection', 'options'),
+    Output('unit-selection', 'value')],
+    [Input('unitID-data', 'children')])
+def update_unit_dropdown(data):
+    unitIDs = data
+    options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs]
+    value = 46
+    return options, value
+
+@app.callback(
     Output('graph', 'children'),
-    [Input('unit-selection', 'value')])
-def update_figure(select):
+    [Input('unit-selection', 'value'),
+    Input('unit-data','children'),
+    Input('unitID-data','children')])
+def update_figure(select, data, ids):
+    unitStats = data
+    unitIDs = ids
+
     traces = []
     unitID = str(select)
     unitName = unitStats[unitID]['name']
@@ -412,7 +485,10 @@ def update_meta_pages(page):
                 html.Div(className="six columns", children=[dcc.Graph(figure=metaUpgradeChart)])
                 ]),
             html.H4('win rates v each faction'),
-            html.H4('win rates with each battle selection')
+            html.H4('win rates with each battle selection'),
+            html.H4('battle card association'),
+            html.H4('bid association'),
+            html.H4('activation count association')
             ])
     return content
 
@@ -478,15 +554,15 @@ def update_rank_pages(selection):
         html.Div(className='row', children=
             [
             html.Div(className='four columns', children=[
-                html.H2('corps'),
+                html.H5('corps'),
                 dcc.Graph(figure=corpsFig)
                 ]),
             html.Div(className='four columns', children=[
-                html.H2('special forces. bleh. maybe show the heavies here?'),
+                html.H5('special forces. bleh. maybe show the heavies here?'),
                 dcc.Graph(figure=sfFig)
                 ]),
             html.Div(className='four columns', children=[
-                html.H2('support and heavy'),
+                html.H5('support and heavy'),
                 dcc.Graph(figure=vehicleFig)
                 ])
             ])])
