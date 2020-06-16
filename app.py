@@ -17,19 +17,10 @@ import json
 ############################ STATIC OBJECTS ############################
 ########################################################################
 
-#save in browser somewhere the event chosen and use that to rotate datasets
-# eventID = 2
-eventID=134
 eventOptions = [{'label': 'IL5 Round Robin', 'value': 2},
                 {'label': 'IL5 Single Elimination', 'value': 134}]
 
-# unitStats = json.loads(open("data/"+str(eventID)+"/unitStats.json").read())
-#probably won't be able to do these other two lines... =/
-# unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
-# unitIDs.sort(key=lambda x:x[1]) #alphabetical sort
-summaryStats = json.loads(open("data/"+str(eventID)+"/summaryStats.json").read())
-listStats = json.loads(open("data/"+str(eventID)+"/listStats.json").read())
-metaListStats = json.loads(open("data/"+str(eventID)+"/metaListStats.json").read())
+battleCardNames = json.loads(open("data/battleCardNames.json").read())
 
 colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separatist':'#101A48',
             'heavy weapon':'#1F37CD', 'personnel':'#1F77B4', 'force':'#FF7F0E', 'command':'#D62728', 'hardpoint':'#D62728',
@@ -40,19 +31,12 @@ defaultColors = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e
 battleColors = {}
 for battleType in ['objectives', 'conditions','deployments']:
     j = 0
-    for i in summaryStats['battles']['all'][battleType]:
-        battleColors[i['name']] = defaultColors[j]
+    for i in battleCardNames[battleType]:
+        battleColors[i] = defaultColors[j]
         j += 1
         if j == 10: j=0;
 factionShades = {'rebel': ['#A91515','#891212','#651616'], 'imperial': ['#6B6B6B','#5A5959','#454343','#333333'],
                 'republic': ['#C49D36','#A27F0D'], 'separatist': ['#101A48','#162A87','#1942FF']}
-
-#find the most appealing unit to initialize unit graph on
-#most upgrades?
-#highest density of upgrades?
-#highest density of upgrades while being in the top x% of untis brought?
-#biggest variety of upgrades?
-#^ might be best
 
 app = dash.Dash(__name__)
 server = app.server
@@ -64,34 +48,6 @@ factionOptions=[{'label':'All','value':'all'},
             {'label':'Imperial','value':'imperial'},
             {'label':'Republic','value':'republic'},
             {'label':'Separatist','value':'separatist'}]
-############## FACTION COUNT PIE CHART ##############
-labels = [faction['name'] for faction in summaryStats['factions']]
-values = [faction['count'] for faction in summaryStats['factions']]
-factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
-            'marker': {'colors':[colors[label] for label in labels]}}]}
-
-############## META SUMMARY PIE CHART ##############
-labels = []
-values = []
-c = []
-for faction in metaListStats:
-    labels = labels + [meta["name"] for meta in metaListStats[faction]]
-    values = values + [meta["count"] for meta in metaListStats[faction]]
-    c = c + factionShades[faction]
-labels += ["Off-Meta"]
-values += [metaListStats["rebel"][0]["off-meta total"]]
-c += ["#F0F0F0"]
-metaSummaryFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
-            'marker': {'colors': c}}]}
-############## META MENU ##############
-# can i color menu options? just with like a=0.5
-metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison','value':'comparison'}]
-for faction in metaListStats:
-    index = 0
-    for meta in metaListStats[faction]:
-        if meta['count'] > 0:
-            metaOptions += [{'label':"--" + meta['name'], 'value': faction+"~"+str(index)}]
-        index += 1
 
 ##################################################################
 ############################ THE SITE ############################
@@ -120,7 +76,7 @@ app.layout = html.Div([
                             html.Div(className='five columns', children=
                                 [
                                 html.H2('Faction Count'),
-                                dcc.Graph(figure=factionFig)
+                                html.Div(id='faction-chart')
                                 ]
                             ),
                             html.Div(className='five columns', children=
@@ -261,11 +217,12 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Meta Lists', value='meta', children=
                         [
-                        dcc.Dropdown(id='meta-selection', value='summary', options=metaOptions),
+                        dcc.Dropdown(id='meta-selection', value='summary'),
                             # [{'label':'Summary', 'value':'summary'},{'label':'Comparison','value':'comparison'},
                             # {'label':'Meta List 1','value':'meta1'},{'label':'Meta List 2','value':'meta2'},
                             # {'label':'Meta List 3','value':'meta3'}]),
-                        html.Div(id='meta-pages')
+                        html.Div(id='meta-pages'),
+                        html.Div(id='meta-summary-chart', style={'display': 'none'})
                         ]
                     )]
                 ),
@@ -324,6 +281,17 @@ def update_unit_dropdown(data):
     return options, value
 
 @app.callback(
+    Output('faction-chart', 'children'),
+    [Input('summary-data', 'children')])
+def update_faction_pie_chart(data):
+    summaryStats = data
+    labels = [faction['name'] for faction in summaryStats['factions']]
+    values = [faction['count'] for faction in summaryStats['factions']]
+    factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
+                'marker': {'colors':[colors[label] for label in labels]}}]}
+    return dcc.Graph(figure=factionFig)
+
+@app.callback(
     Output('graph', 'children'),
     [Input('unit-selection', 'value'),
     Input('unit-data','children'),
@@ -367,8 +335,10 @@ def update_figure(select, data, ids):
 @app.callback(
     [Output('activation-charts','children'),
     Output('activation-average','children')],
-    [Input('activation-selection','value')])
-def update_activation_chart(faction):
+    [Input('activation-selection','value'),
+    Input('summary-data','children')])
+def update_activation_chart(faction, data):
+    summaryStats = data
     #make a static min/max x range for persepctive
     xmin = min([act['act'] for act in summaryStats['activations']['all']])
     xmax = max([act['act'] for act in summaryStats['activations']['all']])
@@ -387,8 +357,10 @@ def update_activation_chart(faction):
 @app.callback(
     [Output('bid-charts','children'),
     Output('bid-average','children')],
-    [Input('bid-selection','value')])
-def update_bid_chart(faction):
+    [Input('bid-selection','value'),
+    Input('summary-data','children')])
+def update_bid_chart(faction, data):
+    summaryStats = data
     #make a static min/max x range for persepctive
     xmin = min([bid['bid'] for bid in summaryStats['bids']['all']])
     xmax = max([bid['bid'] for bid in summaryStats['bids']['all']])
@@ -408,9 +380,11 @@ def update_bid_chart(faction):
     [Output('command1-charts','children'),
     Output('command2-charts','children'),
     Output('command3-charts','children')],
-    [Input('command-selection','value')]
+    [Input('command-selection','value'),
+    Input('summary-data','children')]
 )
-def update_command_chart(faction):
+def update_command_chart(faction, data):
+    summaryStats = data
     commandCharts = {}
     commandColors = [defaultColors[3],defaultColors[4],defaultColors[2]]
     for i in range(1,4):
@@ -430,9 +404,11 @@ def update_command_chart(faction):
     [Output('objective-charts','children'),
     Output('condition-charts','children'),
     Output('deployment-charts','children')],
-    [Input('battle-selection','value')]
+    [Input('battle-selection','value'),
+    Input('summary-data','children')]
 )
-def update_battle_chart(faction):
+def update_battle_chart(faction, data):
+    summaryStats = data
     battleCharts = {}
     for i in ['objectives','conditions','deployments']:
         #sort before graphing
@@ -447,12 +423,46 @@ def update_battle_chart(faction):
                             }
     return dcc.Graph(figure=battleCharts['objectives']),dcc.Graph(figure=battleCharts['conditions']),dcc.Graph(figure=battleCharts['deployments'])
 
+@app.callback(
+    Output('meta-selection', 'options'),
+    [Input('meta-data', 'children')])
+def update_meta_dropdown(data):
+    metaListStats = data
+    metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison','value':'comparison'}]
+    for faction in metaListStats:
+        index = 0
+        for meta in metaListStats[faction]:
+            if meta['count'] > 0:
+                metaOptions += [{'label':"--" + meta['name'], 'value': faction+"~"+str(index)}]
+            index += 1
+    return metaOptions
+
+@app.callback(
+    Output('meta-summary-chart', 'children'),
+    [Input('meta-data', 'children')])
+def update_meta_summary_chart(data):
+    metaListStats = data
+
+    labels = []
+    values = []
+    c = []
+    for faction in metaListStats:
+        labels = labels + [meta["name"] for meta in metaListStats[faction]]
+        values = values + [meta["count"] for meta in metaListStats[faction]]
+        c = c + factionShades[faction]
+    labels += ["Off-Meta"]
+    values += [metaListStats["rebel"][0]["off-meta total"]]
+    c += ["#F0F0F0"]
+    metaSummaryFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
+                'marker': {'colors': c}}]}
+    return metaSummaryFig
 
 @app.callback(
     Output('meta-pages','children'),
-    [Input('meta-selection','value')]
+    [Input('meta-selection','value'),
+    Input('meta-summary-chart','children')]
 )
-def update_meta_pages(page):
+def update_meta_pages(page, metaSummaryFig):
     content = ''
     if page == 'summary':
         content = html.Div(className="five columns", children=[
@@ -494,9 +504,13 @@ def update_meta_pages(page):
 
 @app.callback(
     Output('rank-pages','children'),
-    [Input('rank-selection','value')]
+    [Input('rank-selection','value'),
+    Input('unit-data', 'children'),
+    Input('unitID-data', 'children')]
 )
-def update_rank_pages(selection):
+def update_rank_pages(selection, data, ids):
+    unitStats = data
+    unitIDs = ids
     #id, name, rank, count, faction limited to this faction
     if selection == 'all':
         rankData = [[unit[0],unit[1],unitStats[unit[0]]['rank'],unitStats[unit[0]]['count'],unitStats[unit[0]]['faction']] for unit in unitIDs]
@@ -567,6 +581,8 @@ def update_rank_pages(selection):
                 ])
             ])])
     return content
+
+
 
 
 

@@ -1,0 +1,14 @@
+{
+  "objectives":
+    ["Key Positions", "Breakthrough", "Recover the Supplies", "Intercept the Transmissions",
+    "Sabotage the Moisture Vaporators",
+    "Payload", "Bombing Run", "Hostage Exchange"],
+  "conditions":
+    ["Clear Conditions", "Hostile Environment", "Limited Visibility", "Rapid Reinforcements",
+    "Minefield",
+    "War Weary", "Supply Drop", "Fortified Positions"],
+  "deployments":
+    ["Battle Lines", "The Long March", "Major Offensive", "Disarray",
+    "Advanced Positions",
+    "Hemmed In", "Roll Out", "Danger Close"]
+}
