@@ -17,7 +17,7 @@ import json
 ############################ STATIC OBJECTS ############################
 ########################################################################
 
-eventOptions = [{'label': 'IL5 Round Robin', 'value': 2},
+eventOptions = [{'label': 'IL5 Round Robin', 'value': 133},
                 {'label': 'IL5 Single Elimination', 'value': 134}]
 
 battleCardNames = json.loads(open("data/battleCardNames.json").read())
@@ -58,16 +58,18 @@ app.layout = html.Div([
                         html.H6('Choose an event:')
                     ]),
                     html.Div(className='three columns', children=[
-                        dcc.Dropdown(id='event-selection', value=2, options=eventOptions)
+                        dcc.Dropdown(id='event-selection', value=133, options=eventOptions)
                     ]),
                     # DATA CACHE
                     html.Div(id='unit-data', style={'display': 'none'}),
                     html.Div(id='summary-data', style={'display': 'none'}),
                     html.Div(id='list-data', style={'display': 'none'}),
                     html.Div(id='meta-data', style={'display': 'none'}),
-                    html.Div(id='unitID-data', style={'display': 'none'})
+                    html.Div(id='unitID-data', style={'display': 'none'}),
+                    html.Div(id='faction-rate-data', style={'display': 'none'}),
+                    html.Div(id='win-rate-data', style={'display': 'none'})
                 ]),
-                dcc.Tabs(id='navigation', value='summary', children=
+                dcc.Tabs(id='navigation', value='units', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -121,6 +123,7 @@ app.layout = html.Div([
                             [
                             html.Div(id='graph', className='eight columns'),
                             html.Div(html.H6('Overall Win Rate')),
+                            html.Div(id='unit-faction-rates'),
                             html.Div(html.H6('Rebel Win Rate')),
                             html.Div(html.H6('Imperial Win Rate')),
                             html.Div(html.H6('Republic Win Rate')),
@@ -260,12 +263,27 @@ def update_meta_data(event):
     return stats
 
 @app.callback(
+    Output('faction-rate-data', 'children'),
+    [Input('event-selection', 'value')])
+def update_faction_rate_data(event):
+    stats = json.loads(open("data/"+str(event)+"/factionWinRateStats.json").read())
+    return stats
+
+@app.callback(
+    Output('win-rate-data', 'children'),
+    [Input('event-selection', 'value')])
+def update_win_rate_data(event):
+    stats = json.loads(open("data/"+str(event)+"/winRateStats.json").read())
+    return stats
+
+@app.callback(
     Output('unitID-data', 'children'),
     [Input('unit-data', 'children')])
 def update_unitID_data(unitStats):
     unitIDs = [[unit,unitStats[unit]['name']] for unit in unitStats]
     unitIDs.sort(key=lambda x:x[1])
     return unitIDs
+
 
 #######################################################################
 ############################ THE FUNCTIONS ############################
@@ -292,13 +310,16 @@ def update_faction_pie_chart(data):
     return dcc.Graph(figure=factionFig)
 
 @app.callback(
-    Output('graph', 'children'),
+    [Output('graph', 'children'),
+    Output('unit-faction-rates', 'children')],
     [Input('unit-selection', 'value'),
     Input('unit-data','children'),
-    Input('unitID-data','children')])
-def update_figure(select, data, ids):
+    Input('unitID-data','children'),
+    Input('win-rate-data','children')])
+def update_figure(select, data, ids, data2):
     unitStats = data
     unitIDs = ids
+    winRateStats = data2
 
     traces = []
     unitID = str(select)
@@ -321,6 +342,13 @@ def update_figure(select, data, ids):
             'name': type.title(),
             'marker': {'color': colors[type]}
         })
+    factionPieCharts = {}
+    for faction in winRateStats[str(select)]['factions']:
+        values = [winRateStats[str(select)]['factions'][faction]["wins"],winRateStats[str(select)]['factions'][faction]["games"]-winRateStats[str(select)]['factions'][faction]["wins"]]
+        labels = ["wins", "losses"]
+        factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
+                    'marker': {'colors':[colors[faction],"#ffffff"]}}]}
+        factionPieCharts[faction] = factionFig
     return html.Div(dcc.Graph(id='test',
         figure={
             'data': traces,
@@ -329,8 +357,7 @@ def update_figure(select, data, ids):
                 'transition': {'duration': 500},
                 'title': unitName + "<br>" + str(unitCount) + " in attendance"
             }
-        }
-    ))
+        })), html.Div(dcc.Graph(figure=factionPieCharts['republic']))
 
 @app.callback(
     [Output('activation-charts','children'),
@@ -460,10 +487,12 @@ def update_meta_summary_chart(data):
 @app.callback(
     Output('meta-pages','children'),
     [Input('meta-selection','value'),
-    Input('meta-summary-chart','children')]
+    Input('meta-summary-chart','children'),
+    Input('meta-data','children')]
 )
-def update_meta_pages(page, metaSummaryFig):
+def update_meta_pages(page, metaSummaryFig, data):
     content = ''
+    metaListStats = data
     if page == 'summary':
         content = html.Div(className="five columns", children=[
             html.H2('division of which lists were meta lists and which were not'),
