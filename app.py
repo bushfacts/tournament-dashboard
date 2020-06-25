@@ -130,11 +130,11 @@ app.layout = html.Div([
                             ]
                         ),
                         #percent only? numbers might not make so much sense here...
-                        html.Div(className='row', children=
+                        html.Div(children=
                             [
-                            html.Div(id='objective-rate-charts', className='three columns'),
-                            html.Div(id='condition-rate-charts', className='three columns'),
-                            html.Div(id='deployment-rate-charts', className='three columns')]
+                            html.Div(id='objective-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'}),
+                            html.Div(id='condition-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'}),
+                            html.Div(id='deployment-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'})]
                         )]
                     ),
                     dcc.Tab(label='Commands', value='commands', disabled=False, children=
@@ -336,9 +336,10 @@ def update_figure(select, data, ids, data2):
     battlePieCharts={}
     for battle in battleCardNames:
         num = len(battleCardNames[battle])
-        specs = [[{'type':'pie'}]]*num
+        # specs = [[{'type':'pie'}]]*num
+        specs = [[{'type':'pie'}]*num]
         cards = [b for b in winRateStats[str(select)]['battles'][battle]]
-        battlePieCharts[battle] = make_subplots(rows=num, cols=1, specs=specs, subplot_titles=cards, horizontal_spacing=0)
+        battlePieCharts[battle] = make_subplots(rows=1, cols=num, specs=specs, subplot_titles=cards, horizontal_spacing=0, vertical_spacing=0)
         row = 1
         col = 1
         for b in cards:
@@ -350,15 +351,15 @@ def update_figure(select, data, ids, data2):
                 name=b.title(),
                 marker_colors=["#ffffff",colors[battle]]),
                 row=row, col=col)
-            row += 1
+            col += 1
         battlePieCharts[battle] = go.Figure(battlePieCharts[battle])
         battlePieCharts[battle].update_layout(showlegend=False)
-        battlePieCharts[battle].update_layout(height=1000)
+        battlePieCharts[battle].update_layout(height=250)
         for i in battlePieCharts[battle]['layout']['annotations']:
-            i['font']['size']=10
-            i['x']-=.2
-            i['y']-=.1
-            i['xanchor']='right'
+            i['font']['size']=12
+            # i['x']-=.2
+            # i['y']-=.1
+            # i['xanchor']='right'
     return html.Div(dcc.Graph(id='test',
         figure={
             'data': traces,
@@ -369,7 +370,7 @@ def update_figure(select, data, ids, data2):
             }
         })), html.Div(children = [dcc.Graph(figure=factionPieCharts)]
         ), html.Div(children=[dcc.Graph(figure=battlePieCharts['objectives'])]
-        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['conditions'])]
+        ), html.Div(style={'padding':0}, children=[dcc.Graph(figure=battlePieCharts['conditions'])]
         ), html.Div(children=[dcc.Graph(figure=battlePieCharts['deployments'])])
 
 @app.callback(
