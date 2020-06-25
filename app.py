@@ -132,21 +132,9 @@ app.layout = html.Div([
                         #percent only? numbers might not make so much sense here...
                         html.Div(className='row', children=
                             [
-                            html.Div(className='two columns', children=
-                                [
-                                html.Div(id='objective-rate-charts')
-                                ]
-                            ),
-                            html.Div(className='two columns', children=
-                                [
-                                html.Div(id='condition-rate-charts')
-                                ]
-                            ),
-                            html.Div(className='two columns', children=
-                                [
-                                html.Div(id='deployment-rate-charts')
-                                ]
-                            )]
+                            html.Div(id='objective-rate-charts', className='three columns'),
+                            html.Div(id='condition-rate-charts', className='three columns'),
+                            html.Div(id='deployment-rate-charts', className='three columns')]
                         )]
                     ),
                     dcc.Tab(label='Commands', value='commands', disabled=False, children=
@@ -349,10 +337,11 @@ def update_figure(select, data, ids, data2):
     for battle in battleCardNames:
         num = len(battleCardNames[battle])
         specs = [[{'type':'pie'}]]*num
-        battlePieCharts[battle] = make_subplots(rows=num, cols=1, specs=specs)
+        cards = [b for b in winRateStats[str(select)]['battles'][battle]]
+        battlePieCharts[battle] = make_subplots(rows=num, cols=1, specs=specs, subplot_titles=cards, horizontal_spacing=0)
         row = 1
         col = 1
-        for b in winRateStats[str(select)]['battles'][battle]:
+        for b in cards:
             wins = winRateStats[str(select)]["battles"][battle][b]["wins"]
             games = winRateStats[str(select)]["battles"][battle][b]["games"]
             values = [games-wins,wins]
@@ -364,6 +353,12 @@ def update_figure(select, data, ids, data2):
             row += 1
         battlePieCharts[battle] = go.Figure(battlePieCharts[battle])
         battlePieCharts[battle].update_layout(showlegend=False)
+        battlePieCharts[battle].update_layout(height=1000)
+        for i in battlePieCharts[battle]['layout']['annotations']:
+            i['font']['size']=10
+            i['x']-=.2
+            i['y']-=.1
+            i['xanchor']='right'
     return html.Div(dcc.Graph(id='test',
         figure={
             'data': traces,
@@ -372,10 +367,10 @@ def update_figure(select, data, ids, data2):
                 'transition': {'duration': 500},
                 'title': unitName + "<br>" + str(unitCount) + " in attendance"
             }
-        })), html.Div(className="four columns", children = [dcc.Graph(figure=factionPieCharts)]
+        })), html.Div(children = [dcc.Graph(figure=factionPieCharts)]
         ), html.Div(children=[dcc.Graph(figure=battlePieCharts['objectives'])]
         ), html.Div(children=[dcc.Graph(figure=battlePieCharts['conditions'])]
-        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['deployments'])])        
+        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['deployments'])])
 
 @app.callback(
     [Output('activation-charts','children'),
