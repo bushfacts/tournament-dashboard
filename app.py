@@ -10,8 +10,10 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import pandas as pd
 import json
+import math
 
 ########################################################################
 ############################ STATIC OBJECTS ############################
@@ -116,18 +118,14 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Units', value='units', children=
                         [
-                        dcc.Dropdown(id='unit-selection', className='eight columns'
-                            # options=[{'label':unit[1],'value':int(unit[0])} for unit in unitIDs],
-                            ),
+                        html.Div(className="row", children=[
+                            dcc.Dropdown(id='unit-selection', className='six columns'),
+                        ]),
                         html.Div(className='row', children=
                             [
-                            html.Div(id='graph', className='eight columns'),
+                            html.Div(id='graph', className='six columns'),
                             html.Div(html.H6('Overall Win Rate')),
-                            html.Div(id='unit-faction-rates'),
-                            html.Div(html.H6('Rebel Win Rate')),
-                            html.Div(html.H6('Imperial Win Rate')),
-                            html.Div(html.H6('Republic Win Rate')),
-                            html.Div(html.H6('Separatist Win Rate'))
+                            html.Div(id='unit-faction-rates', className='six columns')
                             ]
                         ),
                         #percent only? numbers might not make so much sense here...
@@ -342,13 +340,26 @@ def update_figure(select, data, ids, data2):
             'name': type.title(),
             'marker': {'color': colors[type]}
         })
-    factionPieCharts = {}
+    # factionPieCharts = {}
+    specs = [[{'type':'pie'}, {'type':'pie'}], [{'type':'pie'}, {'type':'pie'}]]
+    factionPieCharts = make_subplots(rows=2, cols=2, specs=specs)
+    row = 1
+    col = 1
+    count = 1
     for faction in winRateStats[str(select)]['factions']:
-        values = [winRateStats[str(select)]['factions'][faction]["wins"],winRateStats[str(select)]['factions'][faction]["games"]-winRateStats[str(select)]['factions'][faction]["wins"]]
-        labels = ["wins", "losses"]
-        factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
-                    'marker': {'colors':[colors[faction],"#ffffff"]}}]}
-        factionPieCharts[faction] = factionFig
+        row = math.ceil(count/2)
+        col = count - 2*(row-1)
+        values = [winRateStats[str(select)]['factions'][faction]["games"]-winRateStats[str(select)]['factions'][faction]["wins"],winRateStats[str(select)]['factions'][faction]["wins"]]
+        labels = ["losses", "wins"]
+        factionPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False,
+            marker_colors=["#ffffff",colors[faction]]),
+            # domain={'x'=[(col-1)/2, col/2], 'y'=[(row-1)/2, row/2]},
+            row=row, col=col)
+        count += 1
+        # factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
+        #             'marker': {'colors':[colors[faction],"#ffffff"]}}]}
+        # factionPieCharts[faction] = factionFig
+    factionPieCharts = go.Figure(factionPieCharts)
     return html.Div(dcc.Graph(id='test',
         figure={
             'data': traces,
@@ -357,7 +368,17 @@ def update_figure(select, data, ids, data2):
                 'transition': {'duration': 500},
                 'title': unitName + "<br>" + str(unitCount) + " in attendance"
             }
-        })), html.Div(dcc.Graph(figure=factionPieCharts['republic']))
+        })), html.Div(children=[
+                # html.Div(className="row", children=[
+                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['rebel'])]),
+                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['imperial'])]),
+                # ]),
+                # html.Div(className="row", children=[
+                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['republic'])]),
+                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['separatist'])]),
+                # ])
+                html.Div(className="six columns", children = [dcc.Graph(figure=factionPieCharts)])
+            ])
 
 @app.callback(
     [Output('activation-charts','children'),
