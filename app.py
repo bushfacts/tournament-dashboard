@@ -27,7 +27,8 @@ battleCardNames = json.loads(open("data/battleCardNames.json").read())
 colors = {'rebel':'#A91515', 'imperial':'#6B6B6B', 'republic':'#C49D36', 'separatist':'#101A48',
             'heavy weapon':'#1F37CD', 'personnel':'#1F77B4', 'force':'#FF7F0E', 'command':'#D62728', 'hardpoint':'#D62728',
             'gear':'#2CA02C', 'grenades':'#BA57A9', 'comms':'#552923', 'pilot':'#FF7F0E', 'training':'#731FCD',
-            'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4', 'counterpart':'#FF7F0E'
+            'generator':'#7F7F7F', 'armament':'#7CD6DF', 'crew':'#2CA02C', 'ordnance':'#1F77B4', 'counterpart':'#FF7F0E',
+            'objectives':'#2E4C7E', 'conditions':'#43633D', 'deployments':'#8A3836'
             }
 defaultColors = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
 battleColors = {}
@@ -133,35 +134,17 @@ app.layout = html.Div([
                             [
                             html.Div(className='two columns', children=
                                 [
-                                html.H6('Objective Win Rate'),
-                                html.H6('Objective Win Rate'),
-                                html.H6('Objective Win Rate'),
-                                html.H6('Objective Win Rate'),
-                                html.H6('Objective Win Rate'),
-                                html.H6('Objective Win Rate'),
-                                html.H6('Objective Win Rate')
+                                html.Div(id='objective-rate-charts')
                                 ]
                             ),
                             html.Div(className='two columns', children=
                                 [
-                                html.H6('Condition Win Rate'),
-                                html.H6('Condition Win Rate'),
-                                html.H6('Condition Win Rate'),
-                                html.H6('Condition Win Rate'),
-                                html.H6('Condition Win Rate'),
-                                html.H6('Condition Win Rate'),
-                                html.H6('Condition Win Rate')
+                                html.Div(id='condition-rate-charts')
                                 ]
                             ),
                             html.Div(className='two columns', children=
                                 [
-                                html.H6('Deployment Win Rate'),
-                                html.H6('Deployment Win Rate'),
-                                html.H6('Deployment Win Rate'),
-                                html.H6('Deployment Win Rate'),
-                                html.H6('Deployment Win Rate'),
-                                html.H6('Deployment Win Rate'),
-                                html.H6('Deployment Win Rate')
+                                html.Div(id='deployment-rate-charts')
                                 ]
                             )]
                         )]
@@ -309,7 +292,10 @@ def update_faction_pie_chart(data):
 
 @app.callback(
     [Output('graph', 'children'),
-    Output('unit-faction-rates', 'children')],
+    Output('unit-faction-rates', 'children'),
+    Output('objective-rate-charts', 'children'),
+    Output('condition-rate-charts', 'children'),
+    Output('deployment-rate-charts', 'children')],
     [Input('unit-selection', 'value'),
     Input('unit-data','children'),
     Input('unitID-data','children'),
@@ -340,7 +326,7 @@ def update_figure(select, data, ids, data2):
             'name': type.title(),
             'marker': {'color': colors[type]}
         })
-    # factionPieCharts = {}
+    #Faction Pie Charts
     specs = [[{'type':'pie'}, {'type':'pie'}], [{'type':'pie'}, {'type':'pie'}]]
     factionPieCharts = make_subplots(rows=2, cols=2, specs=specs)
     row = 1
@@ -351,15 +337,33 @@ def update_figure(select, data, ids, data2):
         col = count - 2*(row-1)
         values = [winRateStats[str(select)]['factions'][faction]["games"]-winRateStats[str(select)]['factions'][faction]["wins"],winRateStats[str(select)]['factions'][faction]["wins"]]
         labels = ["losses", "wins"]
-        factionPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False,
+        factionPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
+            name=faction.title(),
             marker_colors=["#ffffff",colors[faction]]),
-            # domain={'x'=[(col-1)/2, col/2], 'y'=[(row-1)/2, row/2]},
             row=row, col=col)
         count += 1
-        # factionFig = {'data': [{'labels': labels, 'values': values, 'type': 'pie', 'textinfo': 'value',
-        #             'marker': {'colors':[colors[faction],"#ffffff"]}}]}
-        # factionPieCharts[faction] = factionFig
     factionPieCharts = go.Figure(factionPieCharts)
+    factionPieCharts.update_layout(showlegend=False)
+    #Battle Card Pie Charts
+    battlePieCharts={}
+    for battle in battleCardNames:
+        num = len(battleCardNames[battle])
+        specs = [[{'type':'pie'}]]*num
+        battlePieCharts[battle] = make_subplots(rows=num, cols=1, specs=specs)
+        row = 1
+        col = 1
+        for b in winRateStats[str(select)]['battles'][battle]:
+            wins = winRateStats[str(select)]["battles"][battle][b]["wins"]
+            games = winRateStats[str(select)]["battles"][battle][b]["games"]
+            values = [games-wins,wins]
+            labels = ["losses", "wins"]
+            battlePieCharts[battle].add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
+                name=b.title(),
+                marker_colors=["#ffffff",colors[battle]]),
+                row=row, col=col)
+            row += 1
+        battlePieCharts[battle] = go.Figure(battlePieCharts[battle])
+        battlePieCharts[battle].update_layout(showlegend=False)
     return html.Div(dcc.Graph(id='test',
         figure={
             'data': traces,
@@ -368,17 +372,10 @@ def update_figure(select, data, ids, data2):
                 'transition': {'duration': 500},
                 'title': unitName + "<br>" + str(unitCount) + " in attendance"
             }
-        })), html.Div(children=[
-                # html.Div(className="row", children=[
-                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['rebel'])]),
-                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['imperial'])]),
-                # ]),
-                # html.Div(className="row", children=[
-                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['republic'])]),
-                #     html.Div(className="three columns", children=[dcc.Graph(figure=factionPieCharts['separatist'])]),
-                # ])
-                html.Div(className="six columns", children = [dcc.Graph(figure=factionPieCharts)])
-            ])
+        })), html.Div(className="four columns", children = [dcc.Graph(figure=factionPieCharts)]
+        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['objectives'])]
+        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['conditions'])]
+        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['deployments'])])        
 
 @app.callback(
     [Output('activation-charts','children'),
