@@ -72,7 +72,7 @@ app.layout = html.Div([
                     html.Div(id='faction-rate-data', style={'display': 'none'}),
                     html.Div(id='win-rate-data', style={'display': 'none'})
                 ]),
-                dcc.Tabs(id='navigation', value='units', children=
+                dcc.Tabs(id='navigation', value='summary', children=
                     [
                     dcc.Tab(label='Summary', value='summary', children=
                         [
@@ -97,8 +97,10 @@ app.layout = html.Div([
                             [
                             html.Div(className='five columns', children=
                                 [
-                                html.H2('Rounds Played (coming soon)'),
-                                dcc.Dropdown(id='rounds-selection', value='all', options=factionOptions)
+                                html.H2('Rounds Played'),
+                                dcc.Dropdown(id='round-selection', value='all', options=factionOptions),
+                                html.Div(id='round-charts'),
+                                html.Div(id='round-average')
                                 ]
                             ),
                             html.Div(className='seven columns', children=
@@ -370,7 +372,7 @@ def update_figure(select, data, ids, data2):
             }
         })), html.Div(children = [dcc.Graph(figure=factionPieCharts)]
         ), html.Div(children=[dcc.Graph(figure=battlePieCharts['objectives'])]
-        ), html.Div(style={'padding':0}, children=[dcc.Graph(figure=battlePieCharts['conditions'])]
+        ), dcc.Graph(figure=battlePieCharts['conditions']
         ), html.Div(children=[dcc.Graph(figure=battlePieCharts['deployments'])])
 
 @app.callback(
@@ -416,6 +418,26 @@ def update_bid_chart(faction, data):
             'layout':{'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}}
             }
     return dcc.Graph(figure=bidFig), html.H6('Bid Average: ' + str('%.2f'%(average)))
+
+@app.callback(
+    [Output('round-charts','children'),
+    Output('round-average','children')],
+    [Input('round-selection','value'),
+    Input('summary-data','children')])
+def update_round_chart(faction, data):
+    summaryStats = data
+    #make a static min/max x range for persepctive
+    xmin = 0
+    xmax = 6
+    labels = [round for round in summaryStats['rounds'][faction]]
+    values = [summaryStats['rounds'][faction][round] for round in summaryStats['rounds'][faction]]
+    average = sum([int(labels[i])*values[i] for i in range(len(values))])/sum(values)
+    roundFig = {
+            'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
+                'textinfo': 'value', 'name': 'bid', 'marker':{'color':defaultColors[3]}}],
+            'layout':{'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}}
+            }
+    return dcc.Graph(figure=roundFig), html.H6('Round Average: ' + str('%.2f'%(average)))
 
 @app.callback(
     [Output('command1-charts','children'),
