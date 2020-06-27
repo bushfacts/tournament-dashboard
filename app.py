@@ -3,6 +3,10 @@
 #contents of all of app.layout can be moved to individual files
 #maybe keep callback instance here, but the functions they reference can even go to other files
 
+#TO ADD:
+#Ranks
+    #points spent on each rank
+
 
 import dash
 import dash_core_components as dcc
@@ -20,7 +24,7 @@ import math
 ########################################################################
 
 eventOptions = [{'label': 'IL5 Round Robin', 'value': 133},
-                {'label': 'IL5 Single Elimination', 'value': 134}]
+                {'label': 'IL5 Single Elimination (in progress)', 'value': 134, "disabled":True}]
 
 battleCardNames = json.loads(open("data/battleCardNames.json").read())
 
@@ -127,13 +131,14 @@ app.layout = html.Div([
                         html.Div(className='row', children=
                             [
                             html.Div(id='graph', className='six columns'),
-                            html.Div(html.H6('Overall Win Rate')),
+                            html.H6('Win Rates', className='six columns', style={'text-align':'center'}),
                             html.Div(id='unit-faction-rates', className='six columns')
                             ]
                         ),
                         #percent only? numbers might not make so much sense here...
                         html.Div(children=
                             [
+                            html.H6('Win Rates by Battle Card', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px', 'text-align': 'center'}),
                             html.Div(id='objective-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'}),
                             html.Div(id='condition-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'}),
                             html.Div(id='deployment-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'})]
@@ -317,23 +322,37 @@ def update_figure(select, data, ids, data2):
             'marker': {'color': colors[type]}
         })
     #Faction Pie Charts
-    specs = [[{'type':'pie'}, {'type':'pie'}], [{'type':'pie'}, {'type':'pie'}]]
-    factionPieCharts = make_subplots(rows=2, cols=2, specs=specs)
+    specs = [[{'rowspan':2, 'type':'pie'}, {'type':'pie'}, {'type':'pie'}], [None, {'type':'pie'}, {'type':'pie'}]]
+    titles = ['Overall'] + [faction.title() for faction in winRateStats[str(select)]['factions']]
+    factionPieCharts = make_subplots(rows=2, cols=3, specs=specs, subplot_titles=titles)
     row = 1
     col = 1
     count = 1
+    winsAll = 0
+    gamesAll = 0
     for faction in winRateStats[str(select)]['factions']:
         row = math.ceil(count/2)
         col = count - 2*(row-1)
-        values = [winRateStats[str(select)]['factions'][faction]["games"]-winRateStats[str(select)]['factions'][faction]["wins"],winRateStats[str(select)]['factions'][faction]["wins"]]
+        wins = winRateStats[str(select)]['factions'][faction]["wins"]
+        games = winRateStats[str(select)]['factions'][faction]["games"]
+        values = [games-wins, wins]
         labels = ["losses", "wins"]
         factionPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
             name=faction.title(),
             marker_colors=["#ffffff",colors[faction]]),
-            row=row, col=col)
+            row=row, col=col+1)
         count += 1
+        winsAll += wins
+        gamesAll += games
+    values = [gamesAll-winsAll, winsAll]
+    factionPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
+        name="Overall",
+        marker_colors=["#ffffff","#000000"]),
+        row=1, col=1)
     factionPieCharts = go.Figure(factionPieCharts)
     factionPieCharts.update_layout(showlegend=False)
+    for i in factionPieCharts['layout']['annotations']:
+        i['font']['size']=10
     #Battle Card Pie Charts
     battlePieCharts={}
     for battle in battleCardNames:
@@ -358,7 +377,7 @@ def update_figure(select, data, ids, data2):
         battlePieCharts[battle].update_layout(showlegend=False)
         battlePieCharts[battle].update_layout(height=250)
         for i in battlePieCharts[battle]['layout']['annotations']:
-            i['font']['size']=12
+            i['font']['size']=10
             # i['x']-=.2
             # i['y']-=.1
             # i['xanchor']='right'
@@ -370,10 +389,10 @@ def update_figure(select, data, ids, data2):
                 'transition': {'duration': 500},
                 'title': unitName + "<br>" + str(unitCount) + " in attendance"
             }
-        })), html.Div(children = [dcc.Graph(figure=factionPieCharts)]
-        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['objectives'])]
+        })), dcc.Graph(figure=factionPieCharts
+        ), dcc.Graph(figure=battlePieCharts['objectives']
         ), dcc.Graph(figure=battlePieCharts['conditions']
-        ), html.Div(children=[dcc.Graph(figure=battlePieCharts['deployments'])])
+        ), dcc.Graph(figure=battlePieCharts['deployments'])
 
 @app.callback(
     [Output('activation-charts','children'),
@@ -491,7 +510,7 @@ def update_battle_chart(faction, data):
     [Input('meta-data', 'children')])
 def update_meta_dropdown(data):
     metaListStats = data
-    metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison','value':'comparison'}]
+    metaOptions=[{'label':'Summary','value':'summary'},{'label':'Comparison (coming soon)','value':'comparison', 'disabled':True}]
     for faction in metaListStats:
         index = 0
         for meta in metaListStats[faction]:
@@ -549,21 +568,26 @@ def update_meta_pages(page, metaSummaryFig, data):
         labels = [upgrade["name"] for upgrade in upgrades]
         values = [upgrade["count"] for upgrade in upgrades]
         metaUpgradeChart = {'data': [{'x':labels, 'y':values, 'type':'bar'}]}
+        name = metaListStats[faction][int(metaNumber)]["name"]
 
         content = html.Div([
-            html.H1(metaListStats[faction][int(metaNumber)]["name"]),
-            html.H3("count: " + str(metaListStats[faction][int(metaNumber)]["count"])),
-            html.H4("requirements: " + metaListStats[faction][int(metaNumber)]["img"]),
-            html.H4('central picture of the cards required to be considered this meta list'),
+            html.H1(name),
+            html.H6("count: " + str(metaListStats[faction][int(metaNumber)]["count"])),
+            html.H6("requirements: " + metaListStats[faction][int(metaNumber)]["img"]),
+            # html.H4('central picture of the cards required to be considered this meta list'),
             html.Div(className="row", children=[
-                html.Div(className="six columns", children=[dcc.Graph(figure=metaUnitChart)]),
-                html.Div(className="six columns", children=[dcc.Graph(figure=metaUpgradeChart)])
-                ]),
-            html.H4('win rates v each faction'),
-            html.H4('win rates with each battle selection'),
-            html.H4('battle card association'),
-            html.H4('bid association'),
-            html.H4('activation count association')
+                html.Div(className="six columns", children=[
+                    html.H6("Units brought with " + name, style={'text-align': 'center'}),
+                    dcc.Graph(figure=metaUnitChart)]),
+                html.Div(className="six columns", children=[
+                    html.H6("Upgrades brought with " + name, style={'text-align': 'center'}),
+                    dcc.Graph(figure=metaUpgradeChart)])
+                ])
+            # html.H4('win rates v each faction'),
+            # html.H4('win rates with each battle selection'),
+            # html.H4('battle card association'),
+            # html.H4('bid association'),
+            # html.H4('activation count association')
             ])
     return content
 
@@ -622,28 +646,32 @@ def update_rank_pages(selection, data, ids):
     content = html.Div(children=[
         html.Div(className='row', children=
             [
+            # html.Div(className='six columns', children=[
+            #     html.H2('points spent on each rank, pie chart')
+            #     ]),
             html.Div(className='six columns', children=[
-                html.H2('points spent on each rank, pie chart')
+                html.H2('Commanders & Operatives'),
+                dcc.Graph(figure=heroFig)
                 ]),
             html.Div(className='six columns', children=[
-                html.H2('commanders and operatives'),
-                dcc.Graph(figure=heroFig)
+                html.H5('Supports & Heavies'),
+                dcc.Graph(figure=vehicleFig)
                 ])
             ]),
         html.Div(className='row', children=
             [
-            html.Div(className='four columns', children=[
-                html.H5('corps'),
+            html.Div(className='six columns', children=[
+                html.H5('Corps'),
                 dcc.Graph(figure=corpsFig)
                 ]),
-            html.Div(className='four columns', children=[
-                html.H5('special forces. bleh. maybe show the heavies here?'),
+            html.Div(className='six columns', children=[
+                html.H5('Special Forces'),
                 dcc.Graph(figure=sfFig)
                 ]),
-            html.Div(className='four columns', children=[
-                html.H5('support and heavy'),
-                dcc.Graph(figure=vehicleFig)
-                ])
+            # html.Div(className='four columns', children=[
+            #     html.H5('support and heavy'),
+            #     dcc.Graph(figure=vehicleFig)
+            #     ])
             ])])
     return content
 
