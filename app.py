@@ -67,6 +67,11 @@ app.layout = html.Div([
                     html.Div(className='three columns', children=[
                         dcc.Dropdown(id='event-selection', value=133, options=eventOptions)
                     ]),
+                    html.A([
+                        html.Img(src=app.get_asset_url('Patreon.png'), width="121px", height="30px", style={"float":"right"})
+                    ], href='https://www.patreon.com/BushFactsAnalytics', target='_blank'),
+                    html.Img(src=app.get_asset_url('BushFacts.png'), width="242px", height="60px", style={"float":"right"}),
+
                     # DATA CACHE
                     html.Div(id='unit-data', style={'display': 'none'}),
                     html.Div(id='summary-data', style={'display': 'none'}),
@@ -204,8 +209,7 @@ app.layout = html.Div([
                         html.Div(id='meta-summary-chart', style={'display': 'none'})
                         ]
                     )]
-                ),
-                html.Img(src=app.get_asset_url('BushFacts white.png'), width="303px", height="75px")
+                )
             ])
 #######################################################################
 ############################### THE DATA ##############################
