@@ -6,6 +6,8 @@
 #TO ADD:
 #Ranks
     #points spent on each rank
+#Meta
+    #meta v meta win rates
 
 
 import dash
@@ -122,6 +124,11 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
+                    dcc.Tab(label='Win Rates', value='win-rates', children=
+                        [
+                        html.Div(id='faction-rate-charts')
+                        ]
+                    ),
                     dcc.Tab(label='Ranks', value='rank', children=
                         [
                         dcc.Dropdown(id='rank-selection', value='all', options=factionOptions),
@@ -149,7 +156,7 @@ app.layout = html.Div([
                             html.Div(id='deployment-rate-charts', className='row', style={'marginBottom': 0, 'marginTop':0, 'padding': '0px 30% 0px 0px'})]
                         )]
                     ),
-                    dcc.Tab(label='Commands', value='commands', disabled=False, children=
+                    dcc.Tab(label='Command Cards', value='commands', disabled=False, children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
@@ -174,7 +181,7 @@ app.layout = html.Div([
                             )]
                         )]
                     ),
-                    dcc.Tab(label='Battles', value='battles', disabled=False, children=
+                    dcc.Tab(label='Battle Cards', value='battles', disabled=False, children=
                         [
                         html.Div(className='six columns offset-by-three columns', children=
                             [
@@ -299,7 +306,7 @@ def update_faction_pie_chart(data):
     Input('unit-data','children'),
     Input('unitID-data','children'),
     Input('win-rate-data','children')])
-def update_figure(select, data, ids, data2):
+def update_unit_page(select, data, ids, data2):
     unitStats = data
     unitIDs = ids
     winRateStats = data2
@@ -678,6 +685,41 @@ def update_rank_pages(selection, data, ids):
             #     ])
             ])])
     return content
+
+@app.callback(
+    Output('faction-rate-charts','children'),
+    [Input('faction-rate-data','children')]
+)
+def update_faction_rate_charts(data):
+    factionWinRates = data
+    #Faction Pie Charts
+    specs = [[{'type':'pie'}, {'type':'pie'}, {'type':'pie'}], [{'type':'pie'}, {'type':'pie'}, {'type':'pie'}]]
+    factions = ['rebel','imperial','republic','separatist']
+    titles = []
+    faction1s = []
+    faction2s = []
+    for i in range(4):
+        for j in range(4-i-1):
+            titles += [factions[i].title() + " v " + factions[i+j+1].title()]
+            faction1s += [factions[i]]
+            faction2s += [factions[i+j+1]]
+
+    factionPieCharts = make_subplots(rows=2, cols=3, specs=specs, subplot_titles=titles)
+    for i in range(6):
+        row = math.ceil((i+1)/3)
+        col = math.ceil(i + 1 - (row-1)*3)
+        wins1 = factionWinRates[faction1s[i]][faction2s[i]]["wins"]
+        wins2 = factionWinRates[faction2s[i]][faction1s[i]]["wins"]
+        values = [wins1, wins2]
+        labels = [faction1s[i].title(), faction2s[i].title()]
+        factionPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
+            name=titles[i],
+            marker_colors=[colors[faction1s[i]],colors[faction2s[i]]]),
+            row=row, col=col)
+    charts = go.Figure(factionPieCharts)
+    charts.update_layout(showlegend=False)
+
+    return dcc.Graph(figure=charts)
 
 
 
