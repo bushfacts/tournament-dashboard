@@ -26,7 +26,7 @@ import math
 ########################################################################
 
 eventOptions = [{'label': 'IL5 Round Robin', 'value': 133},
-                {'label': 'IL5 Single Elimination (in progress)', 'value': 134, "disabled":True}]
+                {'label': 'IL5 Single Elimination', 'value': 134}]
 
 battleCardNames = json.loads(open("data/battleCardNames.json").read())
 
@@ -67,7 +67,7 @@ app.layout = html.Div([
                         html.H6('Choose an event:')
                     ]),
                     html.Div(className='three columns', children=[
-                        dcc.Dropdown(id='event-selection', value=133, options=eventOptions)
+                        dcc.Dropdown(id='event-selection', value=134, options=eventOptions)
                     ]),
                     html.A([
                         html.Img(src=app.get_asset_url('Patreon.png'), width="121px", height="30px", style={"float":"right"})
@@ -703,7 +703,6 @@ def update_faction_rate_charts(data):
             titles += [factions[i].title() + " v " + factions[i+j+1].title()]
             faction1s += [factions[i]]
             faction2s += [factions[i+j+1]]
-
     factionPieCharts = make_subplots(rows=2, cols=3, specs=specs, subplot_titles=titles)
     for i in range(6):
         row = math.ceil((i+1)/3)
@@ -719,7 +718,34 @@ def update_faction_rate_charts(data):
     charts = go.Figure(factionPieCharts)
     charts.update_layout(showlegend=False)
 
-    return dcc.Graph(figure=charts)
+    # overall win rate charts
+    specs = [[{'type':'pie'}, {'type':'pie'}, {'type':'pie'}, {'type':'pie'}]]
+    factions = ['rebel','imperial','republic','separatist']
+    titles = []
+    faction1s = []
+    faction2s = []
+    for f in factions:
+        titles += [f.title()]
+    factionOverallPieCharts = make_subplots(rows=1, cols=4, specs=specs, subplot_titles=titles)
+    col = 0
+    for f in factions:
+        row = 1
+        col += 1
+        wins = 0
+        games = 0
+        for y in factions:
+            wins += factionWinRates[f][y]["wins"]
+            games += factionWinRates[f][y]["games"]
+        values = [wins, games-wins]
+        labels = [f.title() + " wins", f.title() + " losses"]
+        factionOverallPieCharts.add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
+            name=titles[col-1],
+            marker_colors=[colors[f],"#F0F0F0"]),
+            row=row, col=col)
+    overallCharts = go.Figure(factionOverallPieCharts)
+    overallCharts.update_layout(showlegend=False)
+
+    return html.Div(children=[dcc.Graph(figure=overallCharts),dcc.Graph(figure=charts)])
 
 
 
