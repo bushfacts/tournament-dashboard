@@ -26,7 +26,11 @@ import math
 ########################################################################
 
 eventOptions = [{'label': 'IL5 Round Robin', 'value': 133},
-                {'label': 'IL5 Single Elimination', 'value': 134}]
+                {'label': 'IL5 Single Elimination', 'value': 134},
+                {'label': 'TFT GenCon 2020 Swiss', 'value': 135},
+                {'label': 'TFT GenCon 2020 Cut', 'value': 136}]
+
+noMatchSlips = [135,136]
 
 battleCardNames = json.loads(open("data/battleCardNames.json").read())
 
@@ -67,7 +71,7 @@ app.layout = html.Div([
                         html.H6('Choose an event:')
                     ]),
                     html.Div(className='three columns', children=[
-                        dcc.Dropdown(id='event-selection', value=134, options=eventOptions)
+                        dcc.Dropdown(id='event-selection', value=135, options=eventOptions)
                     ]),
                     html.A([
                         html.Img(src=app.get_asset_url('Patreon.png'), width="121px", height="30px", style={"float":"right"})
@@ -126,6 +130,7 @@ app.layout = html.Div([
                     ),
                     dcc.Tab(label='Win Rates', value='win-rates', children=
                         [
+                        html.H2("Faction Win Rates"),
                         html.Div(id='faction-rate-charts')
                         ]
                     ),
@@ -305,8 +310,9 @@ def update_faction_pie_chart(data):
     [Input('unit-selection', 'value'),
     Input('unit-data','children'),
     Input('unitID-data','children'),
-    Input('win-rate-data','children')])
-def update_unit_page(select, data, ids, data2):
+    Input('win-rate-data','children'),
+    Input('event-selection', 'value')])
+def update_unit_page(select, data, ids, data2, event):
     unitStats = data
     unitIDs = ids
     winRateStats = data2
@@ -364,46 +370,60 @@ def update_unit_page(select, data, ids, data2):
     factionPieCharts.update_layout(showlegend=False)
     for i in factionPieCharts['layout']['annotations']:
         i['font']['size']=10
-    #Battle Card Pie Charts
-    battlePieCharts={}
-    for battle in battleCardNames:
-        num = len(battleCardNames[battle])
-        # specs = [[{'type':'pie'}]]*num
-        specs = [[{'type':'pie'}]*num]
-        cards = [b for b in winRateStats[str(select)]['battles'][battle]]
-        battlePieCharts[battle] = make_subplots(rows=1, cols=num, specs=specs, subplot_titles=cards, horizontal_spacing=0, vertical_spacing=0)
-        row = 1
-        col = 1
-        for b in cards:
-            wins = winRateStats[str(select)]["battles"][battle][b]["wins"]
-            games = winRateStats[str(select)]["battles"][battle][b]["games"]
-            values = [games-wins,wins]
-            labels = ["losses", "wins"]
-            battlePieCharts[battle].add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
-                name=b.title(),
-                marker_colors=["#ffffff",colors[battle]]),
-                row=row, col=col)
-            col += 1
-        battlePieCharts[battle] = go.Figure(battlePieCharts[battle])
-        battlePieCharts[battle].update_layout(showlegend=False)
-        battlePieCharts[battle].update_layout(height=250)
-        for i in battlePieCharts[battle]['layout']['annotations']:
-            i['font']['size']=10
-            # i['x']-=.2
-            # i['y']-=.1
-            # i['xanchor']='right'
-    return html.Div(dcc.Graph(id='test',
-        figure={
-            'data': traces,
-            'layout': {
-                'yaxis': {'range': [0,unitCount]},
-                'transition': {'duration': 500},
-                'title': unitName + "<br>" + str(unitCount) + " in attendance"
-            }
-        })), dcc.Graph(figure=factionPieCharts
-        ), dcc.Graph(figure=battlePieCharts['objectives']
-        ), dcc.Graph(figure=battlePieCharts['conditions']
-        ), dcc.Graph(figure=battlePieCharts['deployments'])
+    if event in noMatchSlips:
+        return html.Div(dcc.Graph(id='test',
+            figure={
+                'data': traces,
+                'layout': {
+                    'yaxis': {'range': [0,unitCount]},
+                    'transition': {'duration': 500},
+                    'title': unitName + "<br>" + str(unitCount) + " in attendance"
+                }
+            })), dcc.Graph(figure=factionPieCharts
+            ), html.Div("Not available"
+            ), html.Div("Not available"
+            ), html.Div("Not available")
+    else:
+        #Battle Card Pie Charts
+        battlePieCharts={}
+        for battle in battleCardNames:
+            num = len(battleCardNames[battle])
+            # specs = [[{'type':'pie'}]]*num
+            specs = [[{'type':'pie'}]*num]
+            cards = [b for b in winRateStats[str(select)]['battles'][battle]]
+            battlePieCharts[battle] = make_subplots(rows=1, cols=num, specs=specs, subplot_titles=cards, horizontal_spacing=0, vertical_spacing=0)
+            row = 1
+            col = 1
+            for b in cards:
+                wins = winRateStats[str(select)]["battles"][battle][b]["wins"]
+                games = winRateStats[str(select)]["battles"][battle][b]["games"]
+                values = [games-wins,wins]
+                labels = ["losses", "wins"]
+                battlePieCharts[battle].add_trace(go.Pie(labels=labels, values=values, sort=False, textinfo='value',
+                    name=b.title(),
+                    marker_colors=["#ffffff",colors[battle]]),
+                    row=row, col=col)
+                col += 1
+            battlePieCharts[battle] = go.Figure(battlePieCharts[battle])
+            battlePieCharts[battle].update_layout(showlegend=False)
+            battlePieCharts[battle].update_layout(height=250)
+            for i in battlePieCharts[battle]['layout']['annotations']:
+                i['font']['size']=10
+                # i['x']-=.2
+                # i['y']-=.1
+                # i['xanchor']='right'
+        return html.Div(dcc.Graph(id='test',
+            figure={
+                'data': traces,
+                'layout': {
+                    'yaxis': {'range': [0,unitCount]},
+                    'transition': {'duration': 500},
+                    'title': unitName + "<br>" + str(unitCount) + " in attendance"
+                }
+            })), dcc.Graph(figure=factionPieCharts
+            ), dcc.Graph(figure=battlePieCharts['objectives']
+            ), dcc.Graph(figure=battlePieCharts['conditions']
+            ), dcc.Graph(figure=battlePieCharts['deployments'])
 
 @app.callback(
     [Output('activation-charts','children'),
@@ -453,21 +473,25 @@ def update_bid_chart(faction, data):
     [Output('round-charts','children'),
     Output('round-average','children')],
     [Input('round-selection','value'),
-    Input('summary-data','children')])
-def update_round_chart(faction, data):
-    summaryStats = data
-    #make a static min/max x range for persepctive
-    xmin = 0
-    xmax = 6
-    labels = [round for round in summaryStats['rounds'][faction]]
-    values = [summaryStats['rounds'][faction][round] for round in summaryStats['rounds'][faction]]
-    average = sum([int(labels[i])*values[i] for i in range(len(values))])/sum(values)
-    roundFig = {
-            'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
-                'textinfo': 'value', 'name': 'bid', 'marker':{'color':defaultColors[3]}}],
-            'layout':{'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}}
-            }
-    return dcc.Graph(figure=roundFig), html.H6('Round Average: ' + str('%.2f'%(average)))
+    Input('summary-data','children'),
+    Input('event-selection', 'value')])
+def update_round_chart(faction, data, event):
+    if event in noMatchSlips:
+        return html.Div("Not Available"), html.Div("")
+    else:
+        summaryStats = data
+        #make a static min/max x range for persepctive
+        xmin = 0
+        xmax = 6
+        labels = [round for round in summaryStats['rounds'][faction]]
+        values = [summaryStats['rounds'][faction][round] for round in summaryStats['rounds'][faction]]
+        average = sum([int(labels[i])*values[i] for i in range(len(values))])/sum(values)
+        roundFig = {
+                'data': [{'x': labels, 'y': values, 'width': .6, 'textinfo': 'value', 'type': 'bar',
+                    'textinfo': 'value', 'name': 'bid', 'marker':{'color':defaultColors[3]}}],
+                'layout':{'xaxis1': {'range': [xmin-.5,xmax+.5], 'autorange': False, 'dtick': 1}}
+                }
+        return dcc.Graph(figure=roundFig), html.H6('Round Average: ' + str('%.2f'%(average)))
 
 @app.callback(
     [Output('command1-charts','children'),
