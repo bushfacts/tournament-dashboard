@@ -15,7 +15,7 @@ dash-renderer==1.4.1
 dash-table==4.7.0
 decorator==4.4.1
 distlib==0.3.0
-Django==3.0.6
+Django==3.0.14
 filelock==3.0.12
 Flask==1.1.2
 Flask-Compress==1.5.0
